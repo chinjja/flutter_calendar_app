@@ -52,7 +52,7 @@ class CalendarWidget extends StatelessWidget {
       value: item.isSelected,
       onChanged: (value) {
         item.isSelected = !item.isSelected;
-        cp.updateCalendar([item]);
+        cp.saveCalendar([item]);
       },
     );
   }

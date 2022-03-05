@@ -1,8 +1,10 @@
 import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/pages/event.dart';
 import 'package:calendar_app/pages/routes.dart';
+import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({
@@ -25,6 +27,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
   late double _startOffset;
   late double _startScale;
   late Offset _startPoint;
+  late final _plugin = Provider.of<CalendarProvider>(context, listen: false);
   final _controller = ScrollController();
 
   @override
@@ -53,8 +56,8 @@ class _TimelineWidgetState extends State<TimelineWidget> {
           if (scale < 1) {
             scale = 1;
           }
-          if (scale > 10) {
-            scale = 10;
+          if (scale > 5) {
+            scale = 5;
           }
 
           final height = context.findRenderObject()!.semanticBounds.height;
@@ -222,6 +225,8 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                 data.source.start = start.add(Duration(minutes: d1 - d2));
                 data.source.end = end.add(Duration(minutes: d1 - d2));
 
+                _plugin.saveEvent(data.source);
+
                 final sm = ScaffoldMessenger.of(context);
                 sm.hideCurrentSnackBar();
                 sm.showSnackBar(SnackBar(
@@ -233,6 +238,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                       setState(() {
                         data.source.start = start;
                         data.source.end = end;
+                        _plugin.saveEvent(data.source);
                       });
                     },
                   ),
@@ -372,6 +378,9 @@ class _TimelineLayoutData {
     final minutes = event.source.end!.difference(date).inMinutes;
     if (minutes >= 24 * 60) {
       return 24 * 60;
+    }
+    if (minutes - startMinutes < 15) {
+      return startMinutes + 15;
     }
     return minutes;
   }

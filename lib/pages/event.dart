@@ -1,6 +1,9 @@
 import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/pages/routes.dart';
+import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class EventPage extends StatelessWidget {
   const EventPage({Key? key, this.item}) : super(key: key);
@@ -11,7 +14,21 @@ class EventPage extends StatelessWidget {
     var item =
         this.item ?? ModalRoute.of(context)!.settings.arguments as EventItem;
     final event = item.source;
+    final calendar = item.calendar.source;
+    final plugin = Provider.of<CalendarProvider>(context, listen: false);
 
+    Widget dateText;
+    if (event.allDay ?? false) {
+      if (event.start!.isAtSameMomentAs(event.end!)) {
+        dateText = Text(DateFormat.yMd().format(event.start!));
+      } else {
+        final s = DateFormat.yMd().format(event.start!);
+        final e = DateFormat.yMd().format(event.end!);
+        dateText = Text('$s ~ $e');
+      }
+    } else {
+      dateText = Text(DateFormat.yMd().add_j().format(event.start!));
+    }
     return Scaffold(
       appBar: AppBar(
         actions: item.calendar.isReadOnly
@@ -19,14 +36,7 @@ class EventPage extends StatelessWidget {
             : [
                 IconButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return EventEditorPage(event: item);
-                          },
-                        ),
-                      );
+                      _editEvent(context, item);
                     },
                     icon: const Icon(Icons.edit)),
                 PopupMenuButton(
@@ -35,10 +45,8 @@ class EventPage extends StatelessWidget {
                       PopupMenuItem(
                         child: const Text('Delete'),
                         onTap: () {
-                          ScaffoldMessenger.of(context)
-                            ..hideCurrentSnackBar()
-                            ..showSnackBar(const SnackBar(
-                                content: Text('Not implements')));
+                          plugin.deleteEvent(item.source);
+                          Navigator.pop(context);
                         },
                       ),
                       PopupMenuItem(
@@ -55,25 +63,67 @@ class EventPage extends StatelessWidget {
                 ),
               ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(10),
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 20,
-              height: 20,
-              color: item.color,
+            SizedBox(
+              height: 60,
+              child: EditorTile(
+                  leading: Center(
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: item.color,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ),
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        event.title ?? '(제목 없음)',
+                        maxLines: null,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                      dateText,
+                    ],
+                  )),
             ),
-            Text('Title: ${event.title}'),
-            Text('Start: ${event.start}'),
-            Text('End: ${event.end}'),
-            Text('Allday: ${event.allDay}'),
-            Text('Description: ${event.description}'),
-            const SizedBox(height: 10),
-            Text('${event.toJson()}'),
+            EditorTile(
+              leading: const Icon(Icons.calendar_today_outlined),
+              content: Text('${calendar.name}'),
+            ),
+            EditorTile(
+              leading: const Icon(Icons.lock_outline),
+              content: Text(event.availability.name),
+            ),
+            AttendeeWidget(attendees: event.attendees ?? [], onChanged: null),
+            ReminderWidget(reminders: event.reminders ?? [], onChanged: null),
+            if (event.description != null && event.description!.isNotEmpty)
+              EditorTile(
+                leading: const Icon(Icons.description_outlined),
+                content: Text(
+                  event.description!,
+                  maxLines: null,
+                ),
+              ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _editEvent(BuildContext context, EventItem item) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return EventEditorPage(event: item);
+        },
       ),
     );
   }
