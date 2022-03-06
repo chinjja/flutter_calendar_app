@@ -20,24 +20,51 @@ class CalendarWidget extends StatelessWidget {
         }),
         builder: (context, snapshot) {
           final data = snapshot.data;
-          if (data == null) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+
           return SingleChildScrollView(
             child: Column(
-              children: data.entries.map((e) {
-                return Column(
-                  children: [
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    'Calendar List',
+                    style: TextStyle(fontSize: 28),
+                  ),
+                ),
+                const Divider(color: Colors.grey),
+                if (data == null)
+                  const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                if (data != null)
+                  Column(
+                    children: data.entries.map((e) {
+                      return Column(
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.person),
+                            title: Text(e.key),
+                          ),
+                          ...e.value.map((e) => _item(provider, e)),
+                          const Divider(color: Colors.grey),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
                     ListTile(
-                      title: Text(e.key),
+                      leading: Icon(Icons.settings),
+                      title: Text('Settings'),
                     ),
-                    ...e.value.map((e) => _item(provider, e)),
-                    const Divider(),
+                    ListTile(
+                      leading: Icon(Icons.help),
+                      title: Text('Help'),
+                    ),
                   ],
-                );
-              }).toList(),
+                )
+              ],
             ),
           );
         },
@@ -52,7 +79,7 @@ class CalendarWidget extends StatelessWidget {
       value: item.isSelected,
       onChanged: (value) {
         item.isSelected = !item.isSelected;
-        cp.updateCalendar([item]);
+        cp.saveCalendar([item]);
       },
     );
   }

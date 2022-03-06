@@ -2,19 +2,19 @@ import 'dart:math';
 
 import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/pages/routes.dart';
+import 'package:calendar_app/providers/day_provider.dart';
 import 'package:calendar_app/views/timeline.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class DayWidget extends StatefulWidget {
   const DayWidget({
     Key? key,
     required this.date,
-    required this.events,
   }) : super(key: key);
 
   final DateTime date;
-  final Iterable<EventItem> events;
 
   @override
   _DayWidgetState createState() => _DayWidgetState();
@@ -22,29 +22,34 @@ class DayWidget extends StatefulWidget {
 
 class _DayWidgetState extends State<DayWidget> {
   late final _date = widget.date;
+  late final _provider = context.read<DayProvider>();
   var _expanded = false;
 
   @override
   Widget build(BuildContext context) {
-    final items = widget.events;
-    final alldays = <EventItem>[];
-    final times = <EventItem>[];
-    for (final item in items) {
-      if (item.source.allDay ?? false) {
-        alldays.add(item);
-      } else {
-        times.add(item);
-      }
-    }
-    return Column(
-      children: [
-        _header(_date, alldays),
-        TimelineWidget(
-          date: _date,
-          items: times,
-        ),
-      ],
-    );
+    return StreamBuilder<List<EventItem>>(
+        stream: _provider.events,
+        builder: (context, snapshot) {
+          final events = snapshot.data ?? [];
+          final alldays = <EventItem>[];
+          final times = <EventItem>[];
+          for (final item in events) {
+            if (item.source.allDay ?? false) {
+              alldays.add(item);
+            } else {
+              times.add(item);
+            }
+          }
+          return Column(
+            children: [
+              _header(_date, alldays),
+              TimelineWidget(
+                date: _date,
+                items: times,
+              ),
+            ],
+          );
+        });
   }
 
   Widget _header(DateTime date, List<EventItem> items) {
@@ -155,11 +160,8 @@ class _DayWidgetState extends State<DayWidget> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                child: Column(
-                  children: alldays,
-                ),
+              child: Column(
+                children: alldays,
               ),
             ),
           ),

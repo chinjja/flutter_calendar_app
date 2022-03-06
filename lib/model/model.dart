@@ -40,6 +40,8 @@ class CalendarItem {
     this.isSelected = false,
   ]);
 
+  Color get color => Color(source.color ?? 0);
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -61,5 +63,15 @@ class EventUtils {
     }
     return date.isBefore(event.end!) &&
         date.add(const Duration(days: 1)).isAfter(event.start!);
+  }
+
+  static T maxItem<T extends Comparable>(T a, T b) {
+    if (a.compareTo(b) >= 0) return a;
+    return b;
+  }
+
+  static T minItem<T extends Comparable>(T a, T b) {
+    if (a.compareTo(b) <= 0) return a;
+    return b;
   }
 }
