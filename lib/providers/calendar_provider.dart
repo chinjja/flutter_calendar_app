@@ -16,10 +16,15 @@ class CalendarProvider {
 
   late final _calendars = BehaviorSubject<Iterable<CalendarItem>>();
   late final calendars = _calendars.stream;
-  late final selectedCalendars = calendars.flatMap<Iterable<CalendarItem>>(
-      (value) => Stream.fromFuture(Stream.fromIterable(value)
-          .where((event) => event.isSelected)
-          .toList()));
+  late final selectedCalendars =
+      calendars.flatMap<Iterable<CalendarItem>>((value) {
+    return Stream.fromFuture(
+        Stream.fromIterable(value).where((event) => event.isSelected).toList());
+  });
+  late final defaultCalendar = calendars.flatMap<CalendarItem>((value) {
+    return Stream.fromFuture(
+        Stream.fromIterable(value).where((event) => !event.isReadOnly).first);
+  });
   late final _eventChanged = BehaviorSubject<String>();
   late final eventChanged = _eventChanged.stream;
 
@@ -114,11 +119,8 @@ class CalendarProvider {
   }
 
   Future<void> newEvent(BuildContext context, [DateTime? date]) async {
-    final calendars = await this.calendars.first;
     try {
-      final defaultCalendar = calendars
-          .where((element) => element.isSelected && !element.isReadOnly)
-          .first;
+      final defaultCalendar = await this.defaultCalendar.first;
       await Navigator.push(
         context,
         MaterialPageRoute(
