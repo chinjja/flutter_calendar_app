@@ -25,7 +25,7 @@ class CalendarProvider {
     return Stream.fromFuture(
         Stream.fromIterable(value).where((event) => !event.isReadOnly).first);
   });
-  late final _eventChanged = BehaviorSubject<String>();
+  late final _eventChanged = PublishSubject<String>();
   late final eventChanged = _eventChanged.stream;
 
   Future<void> saveCalendar(Iterable<CalendarItem> item) async {

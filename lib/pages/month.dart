@@ -155,9 +155,7 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
                 final week = getWeekByIndex(index);
                 return Provider<WeekProvider>(
                   create: (context) {
-                    final wp = WeekProvider(plugin: _plugin, week: week);
-                    wp.fetchEvents();
-                    return wp;
+                    return WeekProvider(plugin: _plugin, week: week);
                   },
                   dispose: (context, provider) {
                     provider.dispose();
