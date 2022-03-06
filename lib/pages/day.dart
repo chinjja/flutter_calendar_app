@@ -53,14 +53,12 @@ class _DayPageState extends State<DayPage> {
                     DateFormat.yMEd().format(snapshot.data ?? DateTime.now()));
               }),
           actions: [
-            const IconButton(
-              onPressed: null,
-              icon: Icon(Icons.search),
+            IconButton(
+              onPressed: _moveTo,
+              icon: const Icon(Icons.search),
             ),
             IconButton(
-              onPressed: () {
-                _goto(_pageByDate(DateTime.now()));
-              },
+              onPressed: _today,
               icon: const Icon(Icons.today),
             ),
           ],
@@ -93,6 +91,22 @@ class _DayPageState extends State<DayPage> {
         ),
       ),
     );
+  }
+
+  void _moveTo() async {
+    final dt = await showDatePicker(
+      context: context,
+      initialDate: _dateByPage(_pageController.page!.toInt()),
+      firstDate: DateTime(1971),
+      lastDate: DateTime(2200),
+    );
+    if (dt != null) {
+      _goto(_pageByDate(dt));
+    }
+  }
+
+  void _today() {
+    _goto(_pageByDate(DateTime.now()));
   }
 
   void _goto(int page) {

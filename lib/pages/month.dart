@@ -110,9 +110,9 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
         ),
         elevation: 0,
         actions: [
-          const IconButton(
-            onPressed: null,
-            icon: Icon(Icons.search),
+          IconButton(
+            onPressed: _goto,
+            icon: const Icon(Icons.search),
           ),
           IconButton(
             onPressed: () {
@@ -175,12 +175,12 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
                             offset >
                                 curr +
                                     _rowHeight * (height ~/ _rowHeight - 1)) {
-                          _scrollToByWeek(day);
+                          _scrollToByWeek(day, false);
                         } else {
                           final n = height ~/ _rowHeight - 2;
                           final h = _rowHeight * n;
                           if (offset > curr + h) {
-                            _scrollToByIndex(getIndexByWeek(day) - n);
+                            _scrollToByIndex(getIndexByWeek(day) - n, false);
                           }
                         }
                       }
