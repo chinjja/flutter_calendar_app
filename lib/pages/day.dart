@@ -71,9 +71,7 @@ class _DayPageState extends State<DayPage> {
               final date = _dateByPage(page);
               return Provider<DayProvider>(
                 create: (context) {
-                  final provider = DayProvider(plugin: _plugin, date: date);
-                  provider.fetchEvents();
-                  return provider;
+                  return DayProvider(plugin: _plugin, date: date);
                 },
                 dispose: (context, provider) {
                   provider.dispose();
