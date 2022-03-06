@@ -41,6 +41,8 @@ class CalendarProvider {
   }
 
   Future<void> fetchCalendars() async {
+    final result = await hasPermissions();
+    if (!result) return;
     final data = await retriveCalendars();
     _calendars.add(data);
   }
@@ -106,11 +108,7 @@ class CalendarProvider {
 
   Future<bool> hasPermissions([bool request = false]) async {
     final result = await _plugin.hasPermissions();
-    bool ok = result.isSuccess && result.data == true;
-    if (!ok) {
-      return requestPermissions();
-    }
-    return ok;
+    return result.isSuccess && result.data == true;
   }
 
   Future<bool> requestPermissions() async {

@@ -3,6 +3,7 @@ import 'package:calendar_app/providers/week_provider.dart';
 import 'package:calendar_app/views/week.dart';
 import 'package:flutter/material.dart';
 import 'package:calendar_app/views/calendar.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
@@ -52,6 +53,23 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
         final result = await _plugin.requestPermissions();
         if (result) {
           _fetchCalendars();
+        } else {
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                content: const Text('Require Calendar Permission'),
+                actions: [
+                  TextButton(
+                    child: const Text('OK'),
+                    onPressed: () {
+                      SystemNavigator.pop();
+                    },
+                  )
+                ],
+              );
+            },
+          );
         }
       });
     }
