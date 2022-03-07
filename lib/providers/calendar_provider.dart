@@ -10,9 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart';
 
 class CalendarProvider {
-  static const selectedCalendarIds = 'selected_calendar_ids';
+  static const _selectedCalendarIds = 'selected_calendar_ids';
 
-  final _plugin = DeviceCalendarPlugin();
+  CalendarProvider(this.plugin);
+  final DeviceCalendarPlugin plugin;
 
   late final _calendars = BehaviorSubject<Iterable<CalendarItem>>();
   late final calendars = _calendars.stream;
@@ -34,7 +35,7 @@ class CalendarProvider {
     final data = Set<CalendarItem>.from(await calendars.first);
     data.addAll(item);
     pref.setStringList(
-      selectedCalendarIds,
+      _selectedCalendarIds,
       data.where((e) => e.isSelected).map((e) => e.source.id!).toList(),
     );
     _calendars.add(data);
@@ -49,10 +50,10 @@ class CalendarProvider {
 
   Future<List<CalendarItem>> retriveCalendars() async {
     final pref = await SharedPreferences.getInstance();
-    final selected = Set.from(pref.getStringList(selectedCalendarIds) ?? []);
+    final selected = Set.from(pref.getStringList(_selectedCalendarIds) ?? []);
 
     final list = <CalendarItem>[];
-    final result = await _plugin.retrieveCalendars();
+    final result = await plugin.retrieveCalendars();
     for (final c in result.data!) {
       list.add(CalendarItem(c, selected.contains(c.id)));
     }
@@ -61,7 +62,7 @@ class CalendarProvider {
 
   Future<void> saveEvent(Event event) async {
     log('save event: $event');
-    final result = await _plugin.createOrUpdateEvent(event);
+    final result = await plugin.createOrUpdateEvent(event);
     if (result != null) {
       if (result.isSuccess && result.data != null) {
         _eventChanged.add(result.data!);
@@ -74,7 +75,7 @@ class CalendarProvider {
 
   Future<void> deleteEvent(Event event) async {
     log('delete event: $event');
-    final result = await _plugin.deleteEvent(event.calendarId, event.eventId);
+    final result = await plugin.deleteEvent(event.calendarId, event.eventId);
     if (result.isSuccess && result.data == true) {
       _eventChanged.add(event.eventId!);
     }
@@ -94,7 +95,7 @@ class CalendarProvider {
     setLocalLocation(loc);
     final list = <Event>[];
     for (final calendar in calendars) {
-      final result = await _plugin.retrieveEvents(
+      final result = await plugin.retrieveEvents(
         calendar.id,
         RetrieveEventsParams(
           startDate: startDate,
@@ -107,12 +108,12 @@ class CalendarProvider {
   }
 
   Future<bool> hasPermissions([bool request = false]) async {
-    final result = await _plugin.hasPermissions();
+    final result = await plugin.hasPermissions();
     return result.isSuccess && result.data == true;
   }
 
   Future<bool> requestPermissions() async {
-    final result = await _plugin.requestPermissions();
+    final result = await plugin.requestPermissions();
     return result.isSuccess && result.data == true;
   }
 

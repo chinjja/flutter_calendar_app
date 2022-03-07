@@ -1,15 +1,20 @@
 import 'package:calendar_app/providers/calendar_provider.dart';
+import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
 
 import 'package:calendar_app/pages/routes.dart';
 import 'package:provider/provider.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
 
 void main() {
   tz.initializeTimeZones();
-  runApp(MultiProvider(providers: [
-    Provider(create: (context) => CalendarProvider()),
-  ], child: const MyApp()));
+  runApp(Provider(
+      create: (context) {
+        return CalendarProvider(
+          DeviceCalendarPlugin(shouldInitTimezone: false),
+        );
+      },
+      child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
