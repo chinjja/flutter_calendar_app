@@ -1,17 +1,30 @@
+import 'dart:developer';
+
 import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
 
 import 'package:calendar_app/pages/routes.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   tz.initializeTimeZones();
+  final loc = getLocation(await FlutterNativeTimezone.getLocalTimezone());
+  log(loc.name);
+  setLocalLocation(loc);
+
+  final pref = await SharedPreferences.getInstance();
   runApp(Provider(
       create: (context) {
         return CalendarProvider(
-          DeviceCalendarPlugin(shouldInitTimezone: false),
+          plugin: DeviceCalendarPlugin(shouldInitTimezone: false),
+          preference: pref,
         );
       },
       child: const MyApp()));

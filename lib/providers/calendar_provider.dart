@@ -4,16 +4,15 @@ import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/pages/routes.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timezone/timezone.dart';
 
 class CalendarProvider {
   static const _selectedCalendarIds = 'selected_calendar_ids';
 
-  CalendarProvider(this.plugin);
+  CalendarProvider({required this.plugin, required this.preference});
   final DeviceCalendarPlugin plugin;
+  final SharedPreferences preference;
 
   late final _calendars = BehaviorSubject<Iterable<CalendarItem>>();
   late final calendars = _calendars.stream;
@@ -31,10 +30,9 @@ class CalendarProvider {
 
   Future<void> saveCalendar(Iterable<CalendarItem> item) async {
     log('save calendar');
-    final pref = await SharedPreferences.getInstance();
     final data = Set<CalendarItem>.from(await calendars.first);
     data.addAll(item);
-    pref.setStringList(
+    preference.setStringList(
       _selectedCalendarIds,
       data.where((e) => e.isSelected).map((e) => e.source.id!).toList(),
     );
@@ -49,8 +47,8 @@ class CalendarProvider {
   }
 
   Future<List<CalendarItem>> retriveCalendars() async {
-    final pref = await SharedPreferences.getInstance();
-    final selected = Set.from(pref.getStringList(_selectedCalendarIds) ?? []);
+    final selected =
+        Set.from(preference.getStringList(_selectedCalendarIds) ?? []);
 
     final list = <CalendarItem>[];
     final result = await plugin.retrieveCalendars();
@@ -88,11 +86,7 @@ class CalendarProvider {
     required Iterable<Calendar> calendars,
     required DateTime startDate,
     required DateTime endDate,
-    Location? location,
   }) async {
-    final loc =
-        location ?? getLocation(await FlutterNativeTimezone.getLocalTimezone());
-    setLocalLocation(loc);
     final list = <Event>[];
     for (final calendar in calendars) {
       final result = await plugin.retrieveEvents(
