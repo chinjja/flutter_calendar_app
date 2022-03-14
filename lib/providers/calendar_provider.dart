@@ -18,12 +18,15 @@ class CalendarProvider {
   late final calendars = _calendars.stream;
   late final selectedCalendars =
       calendars.flatMap<Iterable<CalendarItem>>((value) {
-    return Stream.fromFuture(
-        Stream.fromIterable(value).where((event) => event.isSelected).toList());
+    return Stream.fromIterable(value)
+        .where((event) => event.isSelected)
+        .toList()
+        .asStream();
   });
   late final defaultCalendar = calendars.flatMap<CalendarItem>((value) {
-    return Stream.fromFuture(
-        Stream.fromIterable(value).where((event) => !event.isReadOnly).first);
+    return Stream.fromIterable(value)
+        .firstWhere((event) => event.isDefault)
+        .asStream();
   });
   late final _eventChanged = PublishSubject<String>();
   late final eventChanged = _eventChanged.stream;
