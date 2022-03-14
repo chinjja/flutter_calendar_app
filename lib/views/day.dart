@@ -2,58 +2,33 @@ import 'dart:math';
 
 import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/pages/routes.dart';
-import 'package:calendar_app/providers/day_provider.dart';
-import 'package:calendar_app/views/timeline.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 
 class DayWidget extends StatefulWidget {
   const DayWidget({
     Key? key,
     required this.date,
+    required this.items,
+    required this.height,
   }) : super(key: key);
 
   final DateTime date;
+  final List<EventItem> items;
+  final double height;
 
   @override
   _DayWidgetState createState() => _DayWidgetState();
 }
 
 class _DayWidgetState extends State<DayWidget> {
-  late final _date = widget.date;
-  late final _provider = context.read<DayProvider>();
   var _expanded = false;
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<EventItem>>(
-        stream: _provider.events,
-        builder: (context, snapshot) {
-          final events = snapshot.data ?? [];
-          final alldays = <EventItem>[];
-          final times = <EventItem>[];
-          for (final item in events) {
-            if (item.source.allDay ?? false) {
-              alldays.add(item);
-            } else {
-              times.add(item);
-            }
-          }
-          return Column(
-            children: [
-              _header(_date, alldays),
-              TimelineWidget(
-                date: _date,
-                items: times,
-              ),
-            ],
-          );
-        });
-  }
-
-  Widget _header(DateTime date, List<EventItem> items) {
-    const rowHeight = 28.0;
+    final items = widget.items;
+    final date = widget.date;
+    late final rowHeight = widget.height / 2;
     final now = DateUtils.dateOnly(DateTime.now());
     final isToday = now == date;
     final hasRest = items.length > 3;
@@ -65,7 +40,7 @@ class _DayWidgetState extends State<DayWidget> {
     } else {
       n = 3;
     }
-    var height = rowHeight * n + 8;
+    var height = rowHeight * n;
     final alldays = <Widget>[];
     for (int i = 0; i < items.length; i++) {
       if (!_expanded && i == 2 && items.length > 3) {

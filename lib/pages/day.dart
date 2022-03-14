@@ -1,6 +1,8 @@
+import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:calendar_app/providers/day_provider.dart';
 import 'package:calendar_app/views/day.dart';
+import 'package:calendar_app/views/timeline.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -21,20 +23,37 @@ class DayPage extends StatefulWidget {
   _DayPageState createState() => _DayPageState();
 }
 
-class _DayPageState extends State<DayPage> {
+class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
   static final firstDay = DateTime(1970, 1, 1);
 
   late final _dateSuject = BehaviorSubject.seeded(widget.date);
-
-  late final _pageController = PageController(
-    initialPage: _pageByDate(widget.date),
+  late final _scrollController = ScrollController(
+    initialScrollOffset: _offsetByDate(widget.date),
   );
-  late final _localizations = MaterialLocalizations.of(context);
-  late final _firstDayOffset =
-      DateUtils.firstDayOffset(1970, 1, _localizations);
+
   late final _plugin = context.read<CalendarProvider>();
 
-  final _bucket = PageStorageBucket();
+  static const _headerExtent = 68.0;
+  static const _minItemExtent = 34.0 * 24;
+  static const _maxItemExtent = 200.0 * 24;
+
+  double _itemExtent = _minItemExtent;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      _dateSuject.add(_dateByOffset(_scrollController.offset));
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _dateSuject.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,23 +82,65 @@ class _DayPageState extends State<DayPage> {
             ),
           ],
         ),
-        body: PageStorage(
-          bucket: _bucket,
-          child: PageView.builder(
-            controller: _pageController,
-            itemBuilder: (context, page) {
-              final date = _dateByPage(page);
-              return Provider<DayProvider>(
-                create: (context) {
-                  return DayProvider(plugin: _plugin, date: date);
-                },
-                dispose: (context, provider) {
-                  provider.dispose();
-                },
-                child: DayWidget(date: date),
-              );
-            },
-          ),
+        body: ListView.builder(
+          controller: _scrollController,
+          itemExtent: _itemExtent,
+          itemBuilder: (context, index) {
+            final date = _dateByIndex(index);
+            return Provider<DayProvider>(
+              create: (context) {
+                return DayProvider(plugin: _plugin, date: date);
+              },
+              dispose: (context, provider) {
+                provider.dispose();
+              },
+              builder: (context, child) {
+                var offset = _scrollController.offset - _offsetByIndex(index);
+                if (offset > _itemExtent - _headerExtent) {
+                  offset = _itemExtent - _headerExtent;
+                }
+                if (offset < 0) {
+                  offset = 0;
+                }
+                final provider = Provider.of<DayProvider>(context);
+                return StreamBuilder<List<EventItem>>(
+                  stream: provider.events,
+                  builder: (context, snapshot) {
+                    final events = snapshot.data ?? [];
+                    final alldays = <EventItem>[];
+                    final times = <EventItem>[];
+                    for (final item in events) {
+                      if (item.source.allDay ?? false) {
+                        alldays.add(item);
+                      } else {
+                        times.add(item);
+                      }
+                    }
+                    return Stack(
+                      children: [
+                        TimelineWidget(
+                          date: date,
+                          items: times,
+                          height: _itemExtent - _headerExtent,
+                          headerHeight: _headerExtent,
+                        ),
+                        Positioned(
+                          top: offset,
+                          left: 0,
+                          right: 0,
+                          child: DayWidget(
+                            date: date,
+                            items: alldays,
+                            height: _headerExtent,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            );
+          },
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
@@ -94,37 +155,50 @@ class _DayPageState extends State<DayPage> {
   void _moveTo() async {
     final dt = await showDatePicker(
       context: context,
-      initialDate: _dateByPage(_pageController.page!.toInt()),
+      initialDate: _dateByOffset(_scrollController.offset),
       firstDate: DateTime(1971),
       lastDate: DateTime(2200),
     );
     if (dt != null) {
-      _goto(_pageByDate(dt));
+      _goto(_indexByDate(dt));
     }
   }
 
   void _today() {
-    _goto(_pageByDate(DateTime.now()));
+    _goto(_indexByDate(DateTime.now()));
   }
 
-  void _goto(int page) {
-    if ((_pageController.page! - page).abs() <= 2) {
-      _pageController.animateToPage(
-        page,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.ease,
-      );
-    } else {
-      _pageController.jumpToPage(page);
-    }
+  void _goto(int index) {
+    final offset = _offsetByIndex(index);
+    _scrollController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.ease,
+    );
   }
 
-  int _pageByDate(DateTime dt) {
-    final days = dt.difference(firstDay).inDays + _firstDayOffset;
-    return days;
+  double _offsetByIndex(int index) {
+    return _itemExtent * index;
   }
 
-  DateTime _dateByPage(int index) {
-    return firstDay.add(Duration(days: index - _firstDayOffset));
+  DateTime _dateByIndex(int index) {
+    return firstDay.add(Duration(days: index));
+  }
+
+  int _indexByOffset(double offset) {
+    return offset ~/ _itemExtent;
+  }
+
+  DateTime _dateByOffset(double offset) {
+    return _dateByIndex(_indexByOffset(offset));
+  }
+
+  int _indexByDate(DateTime dt) {
+    final d = dt.difference(firstDay);
+    return d.inDays;
+  }
+
+  double _offsetByDate(DateTime dt) {
+    return _offsetByIndex(_indexByDate(dt));
   }
 }
