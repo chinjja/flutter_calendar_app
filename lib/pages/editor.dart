@@ -2,10 +2,9 @@ import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:timezone/timezone.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class EventEditorPage extends StatefulWidget {
   const EventEditorPage({
@@ -25,9 +24,13 @@ class EventEditorPage extends StatefulWidget {
 }
 
 class _EventEditorPageState extends State<EventEditorPage> {
-  late final _title = TextEditingController(text: _copy.title);
-  late final _description = TextEditingController(text: _copy.description);
-  late final _location = TextEditingController(text: _copy.location);
+  final _form = GlobalKey<FormState>();
+  final _start = GlobalKey<FormFieldState<DateTime>>();
+  final _end = GlobalKey<FormFieldState<DateTime>>();
+  final _title = GlobalKey<FormFieldState<String>>();
+  final _description = GlobalKey<FormFieldState<String>>();
+  final _location = GlobalKey<FormFieldState<String>>();
+
   late Event _copy;
   late final _plugin = Provider.of<CalendarProvider>(context, listen: false);
 
@@ -46,322 +49,339 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   @override
-  void dispose() {
-    _title.dispose();
-    _description.dispose();
-    _location.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: FlutterNativeTimezone.getLocalTimezone(),
-      builder: (context, snapshot) {
-        final data = snapshot.data;
-        if (data == null) {
-          return const SizedBox.shrink();
-        }
+    final allday = _copy.allDay ?? false;
+    var now = DateTime.now();
+    if (widget.date != null) {
+      final d = widget.date!;
+      now = DateTime(d.year, d.month, d.day, now.hour, now.minute);
+    }
+    final def = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      (now.minute + 15) ~/ 15 * 15,
+    );
+    final start = _copy.start ?? def;
+    final end = _copy.end ?? start.add(const Duration(hours: 1));
 
-        final location = getLocation(data);
-        final allday = _copy.allDay ?? false;
-        var now = DateTime.now();
-        if (widget.date != null) {
-          final d = widget.date!;
-          now = DateTime(d.year, d.month, d.day, now.hour, now.minute);
-        }
-        final def = TZDateTime(
-          location,
-          now.year,
-          now.month,
-          now.day,
-          now.hour,
-          (now.minute + 7.5) ~/ 15 * 15,
-        );
-        final start = _copy.start ?? def;
-        final end = _copy.end ?? start.add(const Duration(hours: 1));
-        _copy.start = start;
-        _copy.end = end;
-
-        return DefaultTextStyle(
-          style: const TextStyle(
-            fontSize: 20,
-            color: Colors.black,
-          ),
-          child: SizedBox.expand(
-            child: SingleChildScrollView(
-              controller: widget.scrollController,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          onPressed: _close,
-                          icon: const Icon(Icons.close),
+    return DefaultTextStyle(
+      style: const TextStyle(
+        fontSize: 20,
+        color: Colors.black,
+      ),
+      child: SizedBox.expand(
+        child: SingleChildScrollView(
+          controller: widget.scrollController,
+          child: Form(
+            key: _form,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const CloseButton(),
+                      Container(
+                        height: 6,
+                        width: 40,
+                        margin: const EdgeInsets.only(bottom: 26),
+                        decoration: const ShapeDecoration(
+                          shape: StadiumBorder(),
+                          color: Colors.grey,
                         ),
-                        const Icon(Icons.drag_handle),
-                        Material(
-                          elevation: 3,
-                          color: Theme.of(context).primaryColor,
-                          shape: const StadiumBorder(),
-                          child: InkWell(
-                            onTap: _save,
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              child: Text(
-                                'Save',
-                                style: TextStyle(color: Colors.white),
-                              ),
+                      ),
+                      Material(
+                        elevation: 3,
+                        color: Theme.of(context).primaryColor,
+                        shape: const StadiumBorder(),
+                        child: InkWell(
+                          onTap: _save,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: Text(
+                              'Save',
+                              style: TextStyle(color: Colors.white),
                             ),
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 50, top: 8),
+                  child: TextFormField(
+                    key: _title,
+                    initialValue: _copy.title,
+                    decoration: const InputDecoration(
+                      hintText: 'Title',
+                      border: InputBorder.none,
+                    ),
+                    style: const TextStyle(
+                      fontSize: 30,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 50, top: 8),
-                    child: TextField(
-                      controller: _title,
-                      decoration: const InputDecoration(
-                        hintText: 'Title',
-                        border: InputBorder.none,
-                      ),
-                      style: const TextStyle(
-                        fontSize: 30,
-                      ),
-                    ),
-                  ),
-                  _div(),
-                  EditorTile(
-                    leading: const Icon(Icons.schedule_outlined),
-                    content: const Text('All-day'),
-                    trailing: Switch(
-                      value: allday,
-                      onChanged: (v) {
-                        setState(() {
-                          _copy.allDay = !_copy.allDay!;
-                        });
-                      },
-                    ),
-                    onTap: () {
+                ),
+                _div(),
+                EditorTile(
+                  leading: const Icon(Icons.schedule_outlined),
+                  content: const Text('All-day'),
+                  trailing: Switch(
+                    value: allday,
+                    onChanged: (v) {
                       setState(() {
                         _copy.allDay = !_copy.allDay!;
                       });
                     },
                   ),
-                  _dateTime(context, start, allday, (value) {
+                  onTap: () {
                     setState(() {
-                      final newDate = TZDateTime.from(value, location);
-                      final delta = newDate.difference(start);
-                      _copy.start = newDate;
-                      _copy.end = _copy.end!.add(delta);
+                      _copy.allDay = !_copy.allDay!;
                     });
-                  }),
-                  _dateTime(context, end, allday, (value) {
-                    setState(() {
-                      _copy.end = TZDateTime.from(value, location);
-                    });
-                  }),
-                  EditorTile(
-                    leading: const Icon(Icons.language_outlined),
-                    content: Text(location.name),
+                  },
+                ),
+                EditorTile(
+                  content: DateTimeFormField(
+                    fieldKey: _start,
+                    allday: allday,
+                    initDate: start,
+                    onChanged: (value) {
+                      final d = _end.currentState!.value!
+                          .difference(_start.currentState!.value!);
+                      _end.currentState?.didChange(value.add(d));
+                    },
                   ),
-                  EditorTile(
-                    leading: const Icon(Icons.refresh_outlined),
-                    content:
-                        Text('${_copy.recurrenceRule ?? 'Does not repeat'}'),
+                ),
+                EditorTile(
+                  content: DateTimeFormField(
+                    fieldKey: _end,
+                    allday: allday,
+                    initDate: end,
+                    validator: (value) {
+                      if (_start.currentState!.value!.isAfter(value!)) {
+                        return 'end is less than or equal to start';
+                      }
+                      return null;
+                    },
                   ),
-                  _div(),
-                  StreamBuilder<Iterable<CalendarItem>>(
-                      stream: _plugin.calendars,
-                      builder: (context, snapshot) {
-                        final data = snapshot.data;
-                        if (data == null) {
-                          return const SizedBox.shrink();
-                        }
-                        final d = data.firstWhere(
-                            (element) => element.source.id == _copy.calendarId);
-                        return EditorTile(
-                          leading: Center(
-                            child: Container(
-                              width: 20,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                color: d.color,
-                                borderRadius: BorderRadius.circular(5),
-                              ),
+                ),
+                EditorTile(
+                  leading: const Icon(Icons.language_outlined),
+                  content: Text(tz.local.name),
+                ),
+                EditorTile(
+                  leading: const Icon(Icons.refresh_outlined),
+                  content: Text('${_copy.recurrenceRule ?? 'Does not repeat'}'),
+                ),
+                _div(),
+                StreamBuilder<Iterable<CalendarItem>>(
+                    stream: _plugin.calendars,
+                    builder: (context, snapshot) {
+                      final data = snapshot.data;
+                      if (data == null) {
+                        return const SizedBox.shrink();
+                      }
+                      final d = data.firstWhere(
+                          (element) => element.source.id == _copy.calendarId);
+                      return EditorTile(
+                        leading: Center(
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: d.color,
+                              borderRadius: BorderRadius.circular(5),
                             ),
                           ),
-                          content: Text('${d.source.name}'),
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  content: SizedBox(
-                                    width: 400,
-                                    height: 400,
-                                    child: CalendarSelectWidget(
-                                      callback: (value) {
-                                        setState(() {
-                                          _copy.calendarId = value.source.id;
-                                        });
-                                        Navigator.pop(context);
-                                      },
-                                    ),
+                        ),
+                        content: Text('${d.source.name}'),
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                content: SizedBox(
+                                  width: 400,
+                                  height: 400,
+                                  child: CalendarSelectWidget(
+                                    callback: (value) {
+                                      setState(() {
+                                        _copy.calendarId = value.source.id;
+                                      });
+                                      Navigator.pop(context);
+                                    },
                                   ),
-                                );
-                              },
-                            );
-                          },
-                        );
-                      }),
-                  _div(),
-                  EditorTile(
-                    leading: const Icon(Icons.location_on_outlined),
-                    content: TextField(
-                      controller: _location,
-                      decoration: const InputDecoration(
-                        hintText: 'Location',
-                        border: InputBorder.none,
-                      ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                    }),
+                _div(),
+                EditorTile(
+                  leading: const Icon(Icons.location_on_outlined),
+                  content: TextFormField(
+                    key: _location,
+                    initialValue: _copy.location,
+                    decoration: const InputDecoration(
+                      hintText: 'Location',
+                      border: InputBorder.none,
                     ),
                   ),
-                  _div(),
-                  ReminderWidget(
-                      reminders: _copy.reminders!,
-                      onChanged: (data) {
-                        setState(() {
-                          _copy.reminders = data;
-                        });
-                      }),
-                  _div(),
-                  EditorTile(
-                    leading: const Icon(Icons.description_outlined),
-                    content: TextField(
-                      controller: _description,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      maxLines: null,
-                      decoration: const InputDecoration(
-                        hintText: 'Description',
-                        border: InputBorder.none,
-                      ),
+                ),
+                _div(),
+                ReminderWidget(
+                    reminders: _copy.reminders!,
+                    onChanged: (data) {
+                      setState(() {
+                        _copy.reminders = data;
+                      });
+                    }),
+                _div(),
+                EditorTile(
+                  leading: const Icon(Icons.description_outlined),
+                  content: TextFormField(
+                    key: _description,
+                    initialValue: _copy.description,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    maxLines: null,
+                    decoration: const InputDecoration(
+                      hintText: 'Description',
+                      border: InputBorder.none,
                     ),
                   ),
-                  _div(),
-                ],
-              ),
+                ),
+                _div(),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  void _close() {
-    Navigator.pop(context);
-  }
-
   void _save() {
-    if (_copy.end!.isBefore(_copy.start!)) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text("Invalid date")));
-      return;
+    if (_form.currentState?.validate() ?? false) {
+      _copy.title = _title.currentState?.value;
+      _copy.location = _location.currentState?.value;
+      _copy.description = _description.currentState?.value;
+      _copy.start = tz.TZDateTime.from(
+        _start.currentState!.value!,
+        tz.local,
+      );
+      _copy.end = tz.TZDateTime.from(
+        _end.currentState!.value!,
+        tz.local,
+      );
+      _plugin.saveEvent(_copy);
+      Navigator.pop(context);
     }
-    _copy.title = _title.text;
-    _copy.location = _location.text;
-    _copy.description = _description.text;
-    _plugin.saveEvent(_copy);
-    Navigator.pop(context);
   }
 
   Widget _div() {
     return const Divider(color: Colors.black);
   }
-
-  Widget _dateTime(BuildContext context, DateTime date, bool allday,
-      MyCallback<DateTime> callback) {
-    return EditorTile(
-      content: _date(context, date, (value) {
-        callback(DateTime(
-          value.year,
-          value.month,
-          value.day,
-          date.hour,
-          date.minute,
-        ));
-      }),
-      trailing: allday
-          ? null
-          : _time(context, date, (value) {
-              callback(DateTime(
-                date.year,
-                date.month,
-                date.day,
-                value.hour,
-                value.minute,
-              ));
-            }),
-    );
-  }
-
-  Widget _date(
-    BuildContext context,
-    DateTime date,
-    MyCallback<DateTime> callback,
-  ) {
-    return GestureDetector(
-      onTap: () async {
-        final result = await showDatePicker(
-          context: context,
-          initialDate: date,
-          firstDate: DateTime(2000, 1, 1),
-          lastDate: DateTime(2100, 1, 1),
-        );
-        if (result != null) {
-          callback(result);
-        }
-      },
-      child: Text(
-        DateFormat.yMEd().format(date),
-      ),
-    );
-  }
-
-  Widget _time(
-    BuildContext context,
-    DateTime date,
-    MyCallback<TimeOfDay> callback,
-  ) {
-    return GestureDetector(
-      onTap: () async {
-        final result = await showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.fromDateTime(date),
-        );
-        if (result != null) {
-          callback(result);
-        }
-      },
-      child: Text(
-        DateFormat.jm().format(date),
-      ),
-    );
-  }
 }
 
 typedef MyCallback<T> = void Function(T value);
+
+class DateTimeFormField extends StatefulWidget {
+  const DateTimeFormField({
+    Key? key,
+    required this.allday,
+    required this.initDate,
+    required this.fieldKey,
+    this.validator,
+    this.onChanged,
+  }) : super(key: key);
+  final bool allday;
+  final DateTime initDate;
+  final Key fieldKey;
+  final FormFieldValidator<DateTime>? validator;
+  final MyCallback<DateTime>? onChanged;
+
+  @override
+  State<DateTimeFormField> createState() => _DateTimeFormFieldState();
+}
+
+class _DateTimeFormFieldState extends State<DateTimeFormField> {
+  @override
+  Widget build(BuildContext context) {
+    return FormField<DateTime>(
+      key: widget.fieldKey,
+      initialValue: widget.initDate,
+      validator: widget.validator,
+      builder: (state) {
+        final date = DateUtils.dateOnly(state.value!);
+        final time = TimeOfDay.fromDateTime(state.value!);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                InkWell(
+                  onTap: () async {
+                    final ret = await showDatePicker(
+                      context: context,
+                      initialDate: date,
+                      firstDate: DateTime(1970, 1, 1),
+                      lastDate: DateTime(2200, 1, 1),
+                    );
+                    if (ret != null) {
+                      final newDate = ret.add(
+                          Duration(hours: time.hour, minutes: time.minute));
+                      widget.onChanged?.call(newDate);
+                      state.didChange(newDate);
+                    }
+                  },
+                  child: Text(DateFormat.yMd().format(date)),
+                ),
+                if (!widget.allday)
+                  InkWell(
+                    onTap: () async {
+                      final ret = await showTimePicker(
+                        context: context,
+                        initialTime: time,
+                      );
+                      if (ret != null) {
+                        final newDate = date.add(
+                            Duration(hours: ret.hour, minutes: ret.minute));
+                        widget.onChanged?.call(newDate);
+                        state.didChange(newDate);
+                      }
+                    },
+                    child: Text(time.format(context)),
+                  ),
+              ],
+            ),
+            if (state.hasError)
+              Text(
+                state.errorText!,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
+              )
+          ],
+        );
+      },
+    );
+  }
+}
 
 class AttendeeWidget extends StatelessWidget {
   const AttendeeWidget({
