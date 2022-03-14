@@ -8,11 +8,17 @@ import 'package:provider/provider.dart';
 import 'package:timezone/timezone.dart';
 
 class EventEditorPage extends StatefulWidget {
-  const EventEditorPage({Key? key, this.date, this.event, this.calendar})
-      : super(key: key);
+  const EventEditorPage({
+    Key? key,
+    this.date,
+    this.event,
+    this.calendar,
+    this.scrollController,
+  }) : super(key: key);
   final DateTime? date;
   final EventItem? event;
   final CalendarItem? calendar;
+  final ScrollController? scrollController;
 
   @override
   _EventEditorPageState createState() => _EventEditorPageState();
@@ -49,192 +55,221 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: _save,
-            icon: const Icon(Icons.save),
+    return FutureBuilder<String>(
+      future: FlutterNativeTimezone.getLocalTimezone(),
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        if (data == null) {
+          return const SizedBox.shrink();
+        }
+
+        final location = getLocation(data);
+        final allday = _copy.allDay ?? false;
+        var now = DateTime.now();
+        if (widget.date != null) {
+          final d = widget.date!;
+          now = DateTime(d.year, d.month, d.day, now.hour, now.minute);
+        }
+        final def = TZDateTime(
+          location,
+          now.year,
+          now.month,
+          now.day,
+          now.hour,
+          (now.minute + 7.5) ~/ 15 * 15,
+        );
+        final start = _copy.start ?? def;
+        final end = _copy.end ?? start.add(const Duration(hours: 1));
+        _copy.start = start;
+        _copy.end = end;
+
+        return DefaultTextStyle(
+          style: const TextStyle(
+            fontSize: 20,
+            color: Colors.black,
           ),
-        ],
-      ),
-      body: FutureBuilder<String>(
-        future: FlutterNativeTimezone.getLocalTimezone(),
-        builder: (context, snapshot) {
-          final data = snapshot.data;
-          if (data == null) {
-            return const SizedBox.shrink();
-          }
-
-          final location = getLocation(data);
-          final allday = _copy.allDay ?? false;
-          var now = DateTime.now();
-          if (widget.date != null) {
-            final d = widget.date!;
-            now = DateTime(d.year, d.month, d.day, now.hour, now.minute);
-          }
-          final def = TZDateTime(
-            location,
-            now.year,
-            now.month,
-            now.day,
-            now.hour,
-            (now.minute + 7.5) ~/ 15 * 15,
-          );
-          final start = _copy.start ?? def;
-          final end = _copy.end ?? start.add(const Duration(hours: 1));
-          _copy.start = start;
-          _copy.end = end;
-
-          return DefaultTextStyle(
-            style: const TextStyle(
-              fontSize: 20,
-              color: Colors.black,
-            ),
-            child: SizedBox.expand(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 50, top: 8),
-                      child: TextField(
-                        controller: _title,
-                        decoration: const InputDecoration(
-                          hintText: 'Title',
-                          border: InputBorder.none,
+          child: SizedBox.expand(
+            child: SingleChildScrollView(
+              controller: widget.scrollController,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          onPressed: _close,
+                          icon: const Icon(Icons.close),
                         ),
-                        style: const TextStyle(
-                          fontSize: 30,
+                        const Icon(Icons.drag_handle),
+                        Material(
+                          elevation: 3,
+                          color: Theme.of(context).primaryColor,
+                          shape: const StadiumBorder(),
+                          child: InkWell(
+                            onTap: _save,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              child: Text(
+                                'Save',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 50, top: 8),
+                    child: TextField(
+                      controller: _title,
+                      decoration: const InputDecoration(
+                        hintText: 'Title',
+                        border: InputBorder.none,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 30,
                       ),
                     ),
-                    _div(),
-                    EditorTile(
-                      leading: const Icon(Icons.schedule_outlined),
-                      content: const Text('All-day'),
-                      trailing: Switch(
-                        value: allday,
-                        onChanged: (v) {
-                          setState(() {
-                            _copy.allDay = !_copy.allDay!;
-                          });
-                        },
-                      ),
-                      onTap: () {
+                  ),
+                  _div(),
+                  EditorTile(
+                    leading: const Icon(Icons.schedule_outlined),
+                    content: const Text('All-day'),
+                    trailing: Switch(
+                      value: allday,
+                      onChanged: (v) {
                         setState(() {
                           _copy.allDay = !_copy.allDay!;
                         });
                       },
                     ),
-                    _dateTime(context, start, allday, (value) {
+                    onTap: () {
                       setState(() {
-                        final newDate = TZDateTime.from(value, location);
-                        final delta = newDate.difference(start);
-                        _copy.start = newDate;
-                        _copy.end = _copy.end!.add(delta);
+                        _copy.allDay = !_copy.allDay!;
                       });
-                    }),
-                    _dateTime(context, end, allday, (value) {
-                      setState(() {
-                        _copy.end = TZDateTime.from(value, location);
-                      });
-                    }),
-                    EditorTile(
-                      leading: const Icon(Icons.language_outlined),
-                      content: Text(location.name),
-                    ),
-                    EditorTile(
-                      leading: const Icon(Icons.refresh_outlined),
-                      content:
-                          Text('${_copy.recurrenceRule ?? 'Does not repeat'}'),
-                    ),
-                    _div(),
-                    StreamBuilder<Iterable<CalendarItem>>(
-                        stream: _plugin.calendars,
-                        builder: (context, snapshot) {
-                          final data = snapshot.data;
-                          if (data == null) {
-                            return const SizedBox.shrink();
-                          }
-                          final d = data.firstWhere((element) =>
-                              element.source.id == _copy.calendarId);
-                          return EditorTile(
-                            leading: Center(
-                              child: Container(
-                                width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  color: d.color,
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
+                    },
+                  ),
+                  _dateTime(context, start, allday, (value) {
+                    setState(() {
+                      final newDate = TZDateTime.from(value, location);
+                      final delta = newDate.difference(start);
+                      _copy.start = newDate;
+                      _copy.end = _copy.end!.add(delta);
+                    });
+                  }),
+                  _dateTime(context, end, allday, (value) {
+                    setState(() {
+                      _copy.end = TZDateTime.from(value, location);
+                    });
+                  }),
+                  EditorTile(
+                    leading: const Icon(Icons.language_outlined),
+                    content: Text(location.name),
+                  ),
+                  EditorTile(
+                    leading: const Icon(Icons.refresh_outlined),
+                    content:
+                        Text('${_copy.recurrenceRule ?? 'Does not repeat'}'),
+                  ),
+                  _div(),
+                  StreamBuilder<Iterable<CalendarItem>>(
+                      stream: _plugin.calendars,
+                      builder: (context, snapshot) {
+                        final data = snapshot.data;
+                        if (data == null) {
+                          return const SizedBox.shrink();
+                        }
+                        final d = data.firstWhere(
+                            (element) => element.source.id == _copy.calendarId);
+                        return EditorTile(
+                          leading: Center(
+                            child: Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: d.color,
+                                borderRadius: BorderRadius.circular(5),
                               ),
                             ),
-                            content: Text('${d.source.name}'),
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) {
-                                  return AlertDialog(
-                                    content: SizedBox(
-                                      width: 400,
-                                      height: 400,
-                                      child: CalendarSelectWidget(
-                                        callback: (value) {
-                                          setState(() {
-                                            _copy.calendarId = value.source.id;
-                                          });
-                                          Navigator.pop(context);
-                                        },
-                                      ),
+                          ),
+                          content: Text('${d.source.name}'),
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  content: SizedBox(
+                                    width: 400,
+                                    height: 400,
+                                    child: CalendarSelectWidget(
+                                      callback: (value) {
+                                        setState(() {
+                                          _copy.calendarId = value.source.id;
+                                        });
+                                        Navigator.pop(context);
+                                      },
                                     ),
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        }),
-                    _div(),
-                    EditorTile(
-                      leading: const Icon(Icons.location_on_outlined),
-                      content: TextField(
-                        controller: _location,
-                        decoration: const InputDecoration(
-                          hintText: 'Location',
-                          border: InputBorder.none,
-                        ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      }),
+                  _div(),
+                  EditorTile(
+                    leading: const Icon(Icons.location_on_outlined),
+                    content: TextField(
+                      controller: _location,
+                      decoration: const InputDecoration(
+                        hintText: 'Location',
+                        border: InputBorder.none,
                       ),
                     ),
-                    _div(),
-                    ReminderWidget(
-                        reminders: _copy.reminders!,
-                        onChanged: (data) {
-                          setState(() {
-                            _copy.reminders = data;
-                          });
-                        }),
-                    _div(),
-                    EditorTile(
-                      leading: const Icon(Icons.description_outlined),
-                      content: TextField(
-                        controller: _description,
-                        keyboardType: TextInputType.multiline,
-                        textInputAction: TextInputAction.newline,
-                        maxLines: null,
-                        decoration: const InputDecoration(
-                          hintText: 'Description',
-                          border: InputBorder.none,
-                        ),
+                  ),
+                  _div(),
+                  ReminderWidget(
+                      reminders: _copy.reminders!,
+                      onChanged: (data) {
+                        setState(() {
+                          _copy.reminders = data;
+                        });
+                      }),
+                  _div(),
+                  EditorTile(
+                    leading: const Icon(Icons.description_outlined),
+                    content: TextField(
+                      controller: _description,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      maxLines: null,
+                      decoration: const InputDecoration(
+                        hintText: 'Description',
+                        border: InputBorder.none,
                       ),
                     ),
-                    _div(),
-                  ],
-                ),
+                  ),
+                  _div(),
+                ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
+  }
+
+  void _close() {
+    Navigator.pop(context);
   }
 
   void _save() {

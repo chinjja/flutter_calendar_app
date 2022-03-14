@@ -115,18 +115,42 @@ class CalendarProvider {
   }
 
   Future<void> newEvent(BuildContext context, [DateTime? date]) async {
+    final defaultCalendar = await this.defaultCalendar.first;
+    _createAndEditEvent(context, date: date, calendar: defaultCalendar);
+  }
+
+  Future<void> editEvent(BuildContext context, EventItem event) async {
+    _createAndEditEvent(context, event: event);
+  }
+
+  Future<void> _createAndEditEvent(BuildContext context,
+      {DateTime? date, CalendarItem? calendar, EventItem? event}) async {
     try {
-      final defaultCalendar = await this.defaultCalendar.first;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) {
-            return EventEditorPage(
-              date: date,
-              calendar: defaultCalendar,
-            );
-          },
+      await showModalBottomSheet(
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
+        clipBehavior: Clip.antiAlias,
+        isScrollControlled: true,
+        context: context,
+        builder: (context) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.95,
+            minChildSize: 0.2,
+            maxChildSize: 0.95,
+            expand: false,
+            snapSizes: const [0.4],
+            snap: true,
+            builder: ((context, scrollController) {
+              return EventEditorPage(
+                scrollController: scrollController,
+                date: date,
+                calendar: calendar,
+                event: event,
+              );
+            }),
+          );
+        },
       );
     } catch (e) {
       showDialog(

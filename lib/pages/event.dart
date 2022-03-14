@@ -36,7 +36,9 @@ class EventPage extends StatelessWidget {
             : [
                 IconButton(
                     onPressed: () {
-                      _editEvent(context, item);
+                      Navigator.pop(context);
+                      Provider.of<CalendarProvider>(context, listen: false)
+                          .editEvent(context, item);
                     },
                     icon: const Icon(Icons.edit)),
                 PopupMenuButton(
@@ -113,17 +115,6 @@ class EventPage extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _editEvent(BuildContext context, EventItem item) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) {
-          return EventEditorPage(event: item);
-        },
       ),
     );
   }
