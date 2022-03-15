@@ -32,24 +32,31 @@ class WeekWidget extends StatefulWidget {
 class _WeekWidgetState extends State<WeekWidget> {
   late final _provider = context.read<WeekProvider>();
   late final _week = widget.week;
+  late final _now =
+      Stream.periodic(const Duration(seconds: 5), (_) => DateTime.now());
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
     return Stack(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _day(now, _week),
-            _day(now, _week.add(const Duration(days: 1))),
-            _day(now, _week.add(const Duration(days: 2))),
-            _day(now, _week.add(const Duration(days: 3))),
-            _day(now, _week.add(const Duration(days: 4))),
-            _day(now, _week.add(const Duration(days: 5))),
-            _day(now, _week.add(const Duration(days: 6))),
-          ],
-        ),
+        StreamBuilder<DateTime>(
+            stream: _now,
+            initialData: DateTime.now(),
+            builder: (context, snapshot) {
+              final now = snapshot.data!;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _day(now, _week),
+                  _day(now, _week.add(const Duration(days: 1))),
+                  _day(now, _week.add(const Duration(days: 2))),
+                  _day(now, _week.add(const Duration(days: 3))),
+                  _day(now, _week.add(const Duration(days: 4))),
+                  _day(now, _week.add(const Duration(days: 5))),
+                  _day(now, _week.add(const Duration(days: 6))),
+                ],
+              );
+            }),
         LayoutBuilder(
           builder: (context, constraints) {
             const offset = 16;

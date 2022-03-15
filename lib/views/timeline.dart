@@ -27,6 +27,8 @@ class TimelineWidget extends StatefulWidget {
 class _TimelineWidgetState extends State<TimelineWidget> {
   late final _plugin = Provider.of<CalendarProvider>(context, listen: false);
   late final _rowHeight = widget.height / 24;
+  late final _now =
+      Stream.periodic(const Duration(seconds: 5), (_) => DateTime.now());
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +59,12 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                 right: 0,
                 child: _timelineItems(date, items),
               ),
-              _timelineAt(date),
+              StreamBuilder<DateTime>(
+                  stream: _now,
+                  initialData: DateTime.now(),
+                  builder: (context, snapshot) {
+                    return _timelineAt(snapshot.data!, date);
+                  }),
             ],
           ),
         ],
@@ -65,8 +72,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
     );
   }
 
-  Widget _timelineAt(DateTime date) {
-    final now = DateTime.now();
+  Widget _timelineAt(DateTime now, DateTime date) {
     const div = 60;
     final minutes = now.difference(date).abs().inMinutes;
     const color = Colors.black;
