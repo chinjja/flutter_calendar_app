@@ -31,7 +31,7 @@ class CalendarWidget extends StatelessWidget {
                     style: TextStyle(fontSize: 28),
                   ),
                 ),
-                const Divider(color: Colors.grey),
+                const Divider(),
                 if (data == null)
                   const Center(
                     child: CircularProgressIndicator(),
@@ -46,7 +46,7 @@ class CalendarWidget extends StatelessWidget {
                             title: Text(e.key),
                           ),
                           ...e.value.map((e) => _item(provider, e)),
-                          const Divider(color: Colors.grey),
+                          const Divider(),
                         ],
                       );
                     }).toList(),

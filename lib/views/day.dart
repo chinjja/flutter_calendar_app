@@ -1,171 +1,124 @@
-import 'dart:math';
-
 import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/pages/routes.dart';
-import 'package:calendar_app/providers/day_provider.dart';
-import 'package:calendar_app/views/timeline.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'colors.dart';
 
 class DayWidget extends StatefulWidget {
   const DayWidget({
     Key? key,
     required this.date,
+    required this.items,
+    required this.height,
   }) : super(key: key);
 
   final DateTime date;
+  final List<EventItem> items;
+  final double height;
 
   @override
   _DayWidgetState createState() => _DayWidgetState();
 }
 
 class _DayWidgetState extends State<DayWidget> {
-  late final _date = widget.date;
-  late final _provider = context.read<DayProvider>();
-  var _expanded = false;
+  late final _now =
+      Stream.periodic(const Duration(seconds: 5), (_) => DateTime.now());
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<EventItem>>(
-        stream: _provider.events,
+    return StreamBuilder<DateTime>(
+        stream: _now,
+        initialData: DateTime.now(),
         builder: (context, snapshot) {
-          final events = snapshot.data ?? [];
-          final alldays = <EventItem>[];
-          final times = <EventItem>[];
-          for (final item in events) {
-            if (item.source.allDay ?? false) {
-              alldays.add(item);
-            } else {
-              times.add(item);
-            }
-          }
-          return Column(
-            children: [
-              _header(_date, alldays),
-              TimelineWidget(
-                date: _date,
-                items: times,
-              ),
-            ],
+          final theme = Theme.of(context);
+          final items = widget.items;
+          final date = widget.date;
+          late final rowHeight = (widget.height - 12) / 2;
+          final now = snapshot.data!;
+          final isToday = DateUtils.isSameDay(now, date);
+          return Container(
+            height: widget.height,
+            padding: const EdgeInsets.only(top: 4),
+            color: theme.secondaryHeaderColor,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 80,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                            DateFormat.EEEE().format(date),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 36,
+                            height: 36,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isToday
+                                  ? Theme.of(context).primaryColor
+                                  : null,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Text(
+                              DateFormat.d().format(date),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: isToday
+                                    ? theme.colorScheme.todayTextColor
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: items.map((e) => _allday(e, rowHeight)).toList(),
+                  ),
+                ),
+              ],
+            ),
           );
         });
   }
 
-  Widget _header(DateTime date, List<EventItem> items) {
-    const rowHeight = 28.0;
-    final now = DateUtils.dateOnly(DateTime.now());
-    final isToday = now == date;
-    final hasRest = items.length > 3;
-    final int n;
-    if (_expanded) {
-      n = max(2, items.length);
-    } else if (items.length <= 2) {
-      n = 2;
-    } else {
-      n = 3;
-    }
-    var height = rowHeight * n + 8;
-    final alldays = <Widget>[];
-    for (int i = 0; i < items.length; i++) {
-      if (!_expanded && i == 2 && items.length > 3) {
-        final rest = Container(
-          height: 26,
-          alignment: Alignment.centerLeft,
-          child: Text('+${items.length - 2}'),
-        );
-        alldays.add(rest);
-        break;
-      }
-      final item = items[i];
-      final widget = Padding(
-        key: ValueKey(item.source.eventId),
-        padding: const EdgeInsets.only(bottom: 1),
-        child: Material(
-          color: item.color,
-          borderRadius: BorderRadius.circular(5),
-          child: InkWell(
-            onTap: () {
-              Navigator.pushNamed(context, Routes.event, arguments: item);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              alignment: Alignment.centerLeft,
-              width: double.infinity,
-              height: 27,
-              child: Text(item.source.title ?? ''),
-            ),
-          ),
-        ),
-      );
-      alldays.add(widget);
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      clipBehavior: Clip.hardEdge,
-      height: height,
-      padding: const EdgeInsets.only(top: 4),
-      color: Theme.of(context).secondaryHeaderColor,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  children: [
-                    Text(
-                      DateFormat.EEEE().format(date),
-                      textAlign: TextAlign.center,
-                    ),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isToday ? Theme.of(context).primaryColor : null,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Text(
-                        DateFormat.d().format(date),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: isToday ? Colors.white : null,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (hasRest)
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _expanded = !_expanded;
-                      });
-                    },
-                    child: SizedBox(
-                      height: 26,
-                      child: Icon(_expanded
-                          ? Icons.expand_less_outlined
-                          : Icons.expand_more_outlined),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Expanded(
+  Widget _allday(EventItem item, double rowHeight) {
+    return Container(
+      height: rowHeight,
+      constraints: const BoxConstraints(minWidth: 50),
+      child: Material(
+        color: item.color,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+        child: InkWell(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1,
             child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Column(
-                children: alldays,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 4,
+              ),
+              child: Text(
+                item.source.title ?? '',
               ),
             ),
           ),
-        ],
+          onTap: () {
+            Navigator.pushNamed(context, Routes.event, arguments: item);
+          },
+        ),
       ),
     );
   }

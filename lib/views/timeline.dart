@@ -5,125 +5,84 @@ import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'colors.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({
     Key? key,
     required this.date,
     required this.items,
+    required this.height,
+    required this.headerHeight,
   }) : super(key: key);
 
   final DateTime date;
   final List<EventItem> items;
+  final double height;
+  final double headerHeight;
 
   @override
   _TimelineWidgetState createState() => _TimelineWidgetState();
 }
 
 class _TimelineWidgetState extends State<TimelineWidget> {
-  static const _rowHeight = 30;
-
-  static double _scale = 1.0;
-  late double _startOffset;
-  late double _startScale;
-  late Offset _startPoint;
   late final _plugin = Provider.of<CalendarProvider>(context, listen: false);
-  final _controller = ScrollController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  late final _rowHeight = widget.height / 24;
+  late final _now =
+      Stream.periodic(const Duration(seconds: 5), (_) => DateTime.now());
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).padding.bottom;
     final date = widget.date;
     final items = widget.items;
-    return Expanded(
-      child: GestureDetector(
-        onScaleStart: (details) {
-          _startOffset = _controller.offset;
-          _startScale = _scale;
-          _startPoint = details.localFocalPoint;
-        },
-        onScaleUpdate: (details) {
-          final offset = _startOffset + _startPoint.dy;
-          final scaledOffset = offset * details.scale;
-          final delta = _startPoint - details.localFocalPoint;
-          var scale = _startScale * details.scale;
-          if (scale < 1) {
-            scale = 1;
-          }
-          if (scale > 5) {
-            scale = 5;
-          }
-
-          final height = context.findRenderObject()!.semanticBounds.height;
-          var newOffset = _startOffset - (offset - scaledOffset) + delta.dy;
-          final maxHeight = _rowHeight * _scale * 24;
-          if (newOffset < 0) {
-            newOffset = 0;
-          } else if (newOffset + height >= maxHeight + bottom) {
-            newOffset = maxHeight - height + bottom;
-          }
-
-          if (scale != _scale) {
-            setState(() {
-              _scale = scale;
-              _controller.jumpTo(newOffset);
-            });
-          } else {
-            _controller.jumpTo(newOffset);
-          }
-        },
-        child: SingleChildScrollView(
-          controller: _controller,
-          physics: const NeverScrollableScrollPhysics(),
-          child: Column(
+    return SizedBox(
+      height: widget.headerHeight + widget.height,
+      child: Column(
+        children: [
+          SizedBox(
+            height: widget.headerHeight,
+          ),
+          Stack(
             children: [
-              Stack(
-                children: [
-                  _timelineTable(date),
-                  const Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: 71,
-                    child: VerticalDivider(
-                      thickness: 1,
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: 80,
-                    right: 0,
-                    child: _timelineItems(date, items),
-                  ),
-                  _timelineAt(date),
-                ],
+              _timelineTable(date),
+              const Positioned(
+                top: 0,
+                bottom: 0,
+                left: 71,
+                child: VerticalDivider(
+                  thickness: 1,
+                ),
               ),
-              SizedBox(height: bottom),
+              Positioned(
+                top: 0,
+                bottom: 0,
+                left: 80,
+                right: 0,
+                child: _timelineItems(date, items),
+              ),
+              StreamBuilder<DateTime>(
+                  stream: _now,
+                  initialData: DateTime.now(),
+                  builder: (context, snapshot) {
+                    return _timelineAt(snapshot.data!, date);
+                  }),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _timelineAt(DateTime date) {
-    final now = DateTime.now();
+  Widget _timelineAt(DateTime now, DateTime date) {
     const div = 60;
     final minutes = now.difference(date).abs().inMinutes;
-    final rowHeight = _rowHeight * _scale;
-    const color = Colors.black;
+    final color = Theme.of(context).colorScheme.timelineClockHand;
 
     if (!DateUtils.isSameDay(now, date)) {
       return const SizedBox.shrink();
     }
     return Positioned(
-      top: rowHeight * minutes / div - 5,
+      top: _rowHeight * minutes / div - 5,
       left: 74,
       right: 0,
       child: Row(
@@ -136,7 +95,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
               color: color,
             ),
           ),
-          const Expanded(
+          Expanded(
             child: Divider(
               color: color,
               thickness: 2,
@@ -149,14 +108,13 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
   Widget _timelineTable(DateTime date) {
     final hours = List.generate(23, (index) => index + 1);
-    const n = 25;
-    final rowHeight = _rowHeight * _scale;
+    const n = 24;
     return SizedBox(
-        height: rowHeight * n,
+        height: _rowHeight * n,
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.symmetric(vertical: rowHeight / 2),
+              padding: EdgeInsets.symmetric(vertical: _rowHeight / 2),
               width: 75,
               child: Column(
                 children: hours.map((hour) {
@@ -164,7 +122,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                   return Container(
                     padding: const EdgeInsets.only(right: 5),
                     alignment: Alignment.centerRight,
-                    height: rowHeight,
+                    height: _rowHeight,
                     child: Text(timeOfDay.format(context)),
                   );
                 }).toList(),
@@ -174,7 +132,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
               child: Column(
                 children: List.filled(n, 0).map((e) {
                   return Container(
-                    height: rowHeight,
+                    height: _rowHeight,
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
@@ -208,13 +166,13 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
           return DragTarget(
             onWillAccept: (data) {
-              return data is EventItem;
+              return data is EventItem && data.source.allDay == false;
             },
             onAcceptWithDetails: (details) {
               setState(() {
                 final rb = context.findRenderObject() as RenderBox;
                 final local = rb.globalToLocal(details.offset);
-                final time = local.dy / _scale / _rowHeight;
+                final time = local.dy / _rowHeight;
                 final d1 = (time * 60 + 7.5).toInt() ~/ 15 * 15;
 
                 final data = details.data as EventItem;
@@ -222,8 +180,12 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                 final end = data.source.end!;
                 final d2 = start.hour * 60 + start.minute;
 
-                data.source.start = start.add(Duration(minutes: d1 - d2));
-                data.source.end = end.add(Duration(minutes: d1 - d2));
+                final diffDays = DateUtils.dateOnly(date)
+                    .difference(DateUtils.dateOnly(data.source.start!));
+                data.source.start =
+                    start.add(Duration(minutes: d1 - d2)).add(diffDays);
+                data.source.end =
+                    end.add(Duration(minutes: d1 - d2)).add(diffDays);
 
                 _plugin.saveEvent(data.source);
 
@@ -253,17 +215,15 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                   final end = e.endMinutes / div;
 
                   final rowWidth = width / e.cols;
-                  final rowHeight = _rowHeight * _scale;
                   final rowSize = Size(
                     rowWidth - 2,
-                    rowHeight * (end - start).abs() - 3,
+                    _rowHeight * (end - start).abs() - 3,
                   );
                   return AnimatedPositioned(
                     key: ValueKey(e.event.source.eventId! +
-                        e.event.source.start!.toString() +
-                        _scale.toString()),
+                        e.event.source.start!.toString()),
                     duration: const Duration(milliseconds: 200),
-                    top: rowHeight * start + 1,
+                    top: _rowHeight * start + 1,
                     left: rowWidth * e.col,
                     child: LongPressDraggable(
                       data: e.event,

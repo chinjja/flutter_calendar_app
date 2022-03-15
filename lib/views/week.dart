@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:calendar_app/model/model.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'colors.dart';
 
 typedef EventItemBuilder = Widget Function(
   BuildContext context,
@@ -32,24 +33,31 @@ class WeekWidget extends StatefulWidget {
 class _WeekWidgetState extends State<WeekWidget> {
   late final _provider = context.read<WeekProvider>();
   late final _week = widget.week;
+  late final _now =
+      Stream.periodic(const Duration(seconds: 5), (_) => DateTime.now());
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
     return Stack(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _day(now, _week),
-            _day(now, _week.add(const Duration(days: 1))),
-            _day(now, _week.add(const Duration(days: 2))),
-            _day(now, _week.add(const Duration(days: 3))),
-            _day(now, _week.add(const Duration(days: 4))),
-            _day(now, _week.add(const Duration(days: 5))),
-            _day(now, _week.add(const Duration(days: 6))),
-          ],
-        ),
+        StreamBuilder<DateTime>(
+            stream: _now,
+            initialData: DateTime.now(),
+            builder: (context, snapshot) {
+              final now = snapshot.data!;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _day(now, _week),
+                  _day(now, _week.add(const Duration(days: 1))),
+                  _day(now, _week.add(const Duration(days: 2))),
+                  _day(now, _week.add(const Duration(days: 3))),
+                  _day(now, _week.add(const Duration(days: 4))),
+                  _day(now, _week.add(const Duration(days: 5))),
+                  _day(now, _week.add(const Duration(days: 6))),
+                ],
+              );
+            }),
         LayoutBuilder(
           builder: (context, constraints) {
             const offset = 16;
@@ -182,7 +190,7 @@ class _WeekWidgetState extends State<WeekWidget> {
     Color? todayFk;
     if (DateUtils.isSameDay(now, date)) {
       todayBk = theme.primaryColor;
-      todayFk = Colors.white;
+      todayFk = theme.colorScheme.todayTextColor;
     }
 
     return Expanded(
@@ -203,7 +211,7 @@ class _WeekWidgetState extends State<WeekWidget> {
           decoration: BoxDecoration(
             color: bk,
             border: Border.all(
-              color: Colors.grey,
+              color: Theme.of(context).dividerColor,
               width: 0.25,
             ),
           ),

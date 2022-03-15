@@ -34,6 +34,7 @@ class CalendarItem {
   final Calendar source;
   bool isSelected;
   bool get isReadOnly => source.isReadOnly ?? true;
+  bool get isDefault => source.isDefault ?? false;
 
   CalendarItem(
     this.source, [

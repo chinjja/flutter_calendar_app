@@ -1,44 +1,71 @@
+import 'dart:collection';
+
+import 'package:calendar_app/main.dart';
+import 'package:calendar_app/pages/month.dart';
+import 'package:calendar_app/providers/calendar_provider.dart';
+import 'package:calendar_app/views/week.dart';
+import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'widget_test.mocks.dart';
+
+@GenerateMocks([
+  DeviceCalendarPlugin,
+  SharedPreferences,
+])
 void main() {
-  test('can call multiple first on a behavior subject', () async {
-    final s = BehaviorSubject.seeded(1);
-    expect(await s.first, 1);
-    expect(await s.first, 1);
+  testWidgets('with permission and no calendar', (tester) async {
+    final plugin = MockDeviceCalendarPlugin();
+    when(plugin.requestPermissions())
+        .thenAnswer((_) async => Result()..data = true);
+    when(plugin.hasPermissions())
+        .thenAnswer((_) async => Result()..data = true);
+    when(plugin.retrieveCalendars())
+        .thenAnswer((_) async => Result()..data = UnmodifiableListView([]));
+
+    final pref = MockSharedPreferences();
+    when(pref.getStringList(any)).thenReturn([]);
+
+    final widget = Provider.value(
+      value: CalendarProvider(plugin: plugin, preference: pref),
+      child: const MyApp(),
+    );
+    await tester.pumpWidget(widget);
+
+    expect(find.byType(MonthPage), findsOneWidget);
+    expect(find.byType(WeekWidget), findsWidgets);
+
+    verify(plugin.requestPermissions()).called(1);
+    verify(plugin.hasPermissions()).called(greaterThan(0));
+    verify(pref.getStringList(any)).called(1);
+    verify(plugin.retrieveCalendars()).called(1);
+    verifyNever(plugin.retrieveEvents(any, any));
   });
 
-  test('which obs emit?', () async {
-    final o1 = PublishSubject<int>();
-    final o2 = PublishSubject<String>();
+  testWidgets('without permission', (tester) async {
+    final plugin = MockDeviceCalendarPlugin();
+    when(plugin.requestPermissions())
+        .thenAnswer((_) async => Result()..data = false);
+    when(plugin.hasPermissions())
+        .thenAnswer((_) async => Result()..data = false);
+    final pref = MockSharedPreferences();
+    final widget = Provider.value(
+      value: CalendarProvider(plugin: plugin, preference: pref),
+      child: const MyApp(),
+    );
+    await tester.pumpWidget(widget);
 
-    final o3 = o1.withLatestFrom(o2, (t, s) => '$t$s');
-    expect(o3, emitsInOrder(['2A', '3A', '4B']));
-    o1.add(1);
-    o2.add('A');
-    o1.add(2);
-    o1.add(3);
-    await Future.delayed(const Duration(milliseconds: 5));
-    o2.add('B');
-    o1.add(4);
-  });
+    expect(find.byType(MonthPage), findsOneWidget);
+    expect(find.byType(WeekWidget), findsWidgets);
 
-  test('which obs emit? 2', () async {
-    final o1 = PublishSubject<int>();
-    final o2 = PublishSubject<String>();
-
-    final o3 = Rx.combineLatest2(o1, o2, (t, s) => '$t$s');
-    expect(o3, emitsInOrder(['1A', '2A', '3A', '3B', '4B']));
-    o1.add(1);
-    await Future.delayed(const Duration(milliseconds: 5));
-    o2.add('A');
-    await Future.delayed(const Duration(milliseconds: 5));
-    o1.add(2);
-    await Future.delayed(const Duration(milliseconds: 5));
-    o1.add(3);
-    await Future.delayed(const Duration(milliseconds: 5));
-    o2.add('B');
-    await Future.delayed(const Duration(milliseconds: 5));
-    o1.add(4);
+    verify(plugin.requestPermissions()).called(1);
+    verifyNever(plugin.hasPermissions());
+    verifyNever(plugin.retrieveCalendars());
+    verifyNever(plugin.retrieveEvents(any, any));
+    verifyNever(pref.getStringList(any));
   });
 }
