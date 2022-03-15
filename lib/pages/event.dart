@@ -65,55 +65,57 @@ class EventPage extends StatelessWidget {
                 ),
               ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 60,
-              child: EditorTile(
-                  leading: Center(
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: item.color,
-                        borderRadius: BorderRadius.circular(5),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 60,
+                child: EditorTile(
+                    leading: Center(
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: item.color,
+                          borderRadius: BorderRadius.circular(5),
+                        ),
                       ),
                     ),
-                  ),
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        event.title ?? '(제목 없음)',
-                        maxLines: null,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      dateText,
-                    ],
-                  )),
-            ),
-            EditorTile(
-              leading: const Icon(Icons.calendar_today_outlined),
-              content: Text('${calendar.name}'),
-            ),
-            EditorTile(
-              leading: const Icon(Icons.lock_outline),
-              content: Text(event.availability.name),
-            ),
-            AttendeeWidget(attendees: event.attendees ?? [], onChanged: null),
-            ReminderWidget(reminders: event.reminders ?? [], onChanged: null),
-            if (event.description != null && event.description!.isNotEmpty)
-              EditorTile(
-                leading: const Icon(Icons.description_outlined),
-                content: Text(
-                  event.description!,
-                  maxLines: null,
-                ),
+                    content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          event.title ?? '(제목 없음)',
+                          maxLines: null,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                        dateText,
+                      ],
+                    )),
               ),
-          ],
+              EditorTile(
+                leading: const Icon(Icons.calendar_today_outlined),
+                content: Text('${calendar.name}'),
+              ),
+              EditorTile(
+                leading: const Icon(Icons.lock_outline),
+                content: Text(event.availability.name),
+              ),
+              AttendeeWidget(attendees: event.attendees ?? [], onChanged: null),
+              ReminderWidget(reminders: event.reminders ?? [], onChanged: null),
+              if (event.description != null && event.description!.isNotEmpty)
+                EditorTile(
+                  leading: const Icon(Icons.description_outlined),
+                  content: Text(
+                    event.description!,
+                    maxLines: null,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -72,9 +72,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
     final start = _copy.start ?? def;
     final end = _copy.end ?? start.add(const Duration(hours: 1));
 
-    return DefaultTextStyle(
-      style: theme.textTheme.titleMedium!,
-      child: SizedBox.expand(
+    return SafeArea(
+      child: DefaultTextStyle(
+        style: theme.textTheme.titleMedium!,
         child: SingleChildScrollView(
           controller: widget.scrollController,
           child: Form(
