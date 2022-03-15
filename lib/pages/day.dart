@@ -166,16 +166,27 @@ class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
   }
 
   void _today() {
-    _goto(_indexByDate(DateTime.now()));
+    final now = DateTime.now();
+    _goto(_indexByDate(now), TimeOfDay.fromDateTime(now));
   }
 
-  void _goto(int index) {
-    final offset = _offsetByIndex(index);
+  void _goto(
+    int index, [
+    TimeOfDay time = const TimeOfDay(hour: 5, minute: 0),
+  ]) {
+    final offset = _offsetByIndex(index) + _offsetByTime(time);
     _scrollController.animateTo(
       offset,
       duration: const Duration(milliseconds: 200),
       curve: Curves.ease,
     );
+  }
+
+  double _offsetByTime(TimeOfDay? time) {
+    if (time == null) {
+      return 0;
+    }
+    return (_itemExtent - _headerExtent) * (time.hour / 24);
   }
 
   double _offsetByIndex(int index) {
