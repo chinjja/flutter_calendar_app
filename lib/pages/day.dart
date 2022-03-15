@@ -144,7 +144,8 @@ class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            await _plugin.newEvent(context, widget.date);
+            final date = await _dateSuject.first;
+            await _plugin.newEvent(context, date);
           },
           child: const Icon(Icons.add),
         ),
