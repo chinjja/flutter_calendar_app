@@ -52,7 +52,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                 bottom: 0,
                 left: 71,
                 child: VerticalDivider(
-                  thickness: 1,
+                  thickness: 0.5,
                 ),
               ),
               Positioned(
@@ -140,6 +140,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                       border: Border(
                         bottom: BorderSide(
                           color: Theme.of(context).dividerColor,
+                          width: 0.5,
                         ),
                       ),
                     ),
