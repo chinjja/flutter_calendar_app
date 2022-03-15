@@ -5,6 +5,7 @@ import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'colors.dart';
 
 class TimelineWidget extends StatefulWidget {
   const TimelineWidget({
@@ -75,7 +76,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
   Widget _timelineAt(DateTime now, DateTime date) {
     const div = 60;
     final minutes = now.difference(date).abs().inMinutes;
-    const color = Colors.black;
+    final color = Theme.of(context).colorScheme.timelineClockHand;
 
     if (!DateUtils.isSameDay(now, date)) {
       return const SizedBox.shrink();
@@ -94,7 +95,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
               color: color,
             ),
           ),
-          const Expanded(
+          Expanded(
             child: Divider(
               color: color,
               thickness: 2,

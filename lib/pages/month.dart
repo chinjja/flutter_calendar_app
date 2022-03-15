@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:calendar_app/main.dart';
 
 class MonthPage extends StatefulWidget {
   const MonthPage({Key? key}) : super(key: key);
@@ -137,8 +138,8 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
                         child: Text(
                           DateFormat.E().format(e),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: theme.colorScheme.todayTextColor,
                           ),
                         ),
                       ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:calendar_app/model/model.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'colors.dart';
 
 typedef EventItemBuilder = Widget Function(
   BuildContext context,
@@ -189,7 +190,7 @@ class _WeekWidgetState extends State<WeekWidget> {
     Color? todayFk;
     if (DateUtils.isSameDay(now, date)) {
       todayBk = theme.primaryColor;
-      todayFk = Colors.white;
+      todayFk = theme.colorScheme.todayTextColor;
     }
 
     return Expanded(
@@ -210,7 +211,7 @@ class _WeekWidgetState extends State<WeekWidget> {
           decoration: BoxDecoration(
             color: bk,
             border: Border.all(
-              color: Colors.grey,
+              color: Theme.of(context).dividerColor,
               width: 0.25,
             ),
           ),

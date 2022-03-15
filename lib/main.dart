@@ -11,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart';
 
+export 'views/colors.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -39,6 +41,7 @@ class MyApp extends StatelessWidget {
       title: 'Calendar App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        dividerColor: Colors.grey,
         brightness: Brightness.light,
       ),
       initialRoute: Routes.month,

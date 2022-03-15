@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/pages/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'colors.dart';
 
 class DayWidget extends StatefulWidget {
   const DayWidget({
@@ -31,6 +30,7 @@ class _DayWidgetState extends State<DayWidget> {
         stream: _now,
         initialData: DateTime.now(),
         builder: (context, snapshot) {
+          final theme = Theme.of(context);
           final items = widget.items;
           final date = widget.date;
           late final rowHeight = (widget.height - 12) / 2;
@@ -39,7 +39,7 @@ class _DayWidgetState extends State<DayWidget> {
           return Container(
             height: widget.height,
             padding: const EdgeInsets.only(top: 4),
-            color: Theme.of(context).secondaryHeaderColor,
+            color: theme.secondaryHeaderColor,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -70,7 +70,9 @@ class _DayWidgetState extends State<DayWidget> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 20,
-                                color: isToday ? Colors.white : null,
+                                color: isToday
+                                    ? theme.colorScheme.todayTextColor
+                                    : null,
                               ),
                             ),
                           ),

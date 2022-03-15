@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:calendar_app/main.dart';
 
 class EventEditorPage extends StatefulWidget {
   const EventEditorPage({
@@ -52,6 +53,8 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final allday = _copy.allDay ?? false;
     var now = DateTime.now();
     if (widget.date != null) {
@@ -70,10 +73,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
     final end = _copy.end ?? start.add(const Duration(hours: 1));
 
     return DefaultTextStyle(
-      style: const TextStyle(
-        fontSize: 20,
-        color: Colors.black,
-      ),
+      style: theme.textTheme.titleMedium!,
       child: SizedBox.expand(
         child: SingleChildScrollView(
           controller: widget.scrollController,
@@ -95,25 +95,26 @@ class _EventEditorPageState extends State<EventEditorPage> {
                         height: 6,
                         width: 40,
                         margin: const EdgeInsets.only(bottom: 26),
-                        decoration: const ShapeDecoration(
-                          shape: StadiumBorder(),
-                          color: Colors.grey,
+                        decoration: ShapeDecoration(
+                          shape: const StadiumBorder(),
+                          color: theme.dividerColor,
                         ),
                       ),
                       Material(
                         elevation: 3,
-                        color: Theme.of(context).primaryColor,
+                        color: theme.primaryColor,
                         shape: const StadiumBorder(),
                         child: InkWell(
                           onTap: _save,
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 8,
                             ),
                             child: Text(
                               'Save',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(
+                                  color: theme.colorScheme.todayTextColor),
                             ),
                           ),
                         ),
@@ -294,7 +295,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   Widget _div() {
-    return const Divider(color: Colors.black);
+    return const Divider();
   }
 }
 
@@ -322,6 +323,8 @@ class DateTimeFormField extends StatefulWidget {
 class _DateTimeFormFieldState extends State<DateTimeFormField> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return FormField<DateTime>(
       key: widget.fieldKey,
       initialValue: widget.initDate,
@@ -373,8 +376,8 @@ class _DateTimeFormFieldState extends State<DateTimeFormField> {
             if (state.hasError)
               Text(
                 state.errorText!,
-                style: const TextStyle(
-                  color: Colors.red,
+                style: TextStyle(
+                  color: theme.colorScheme.error,
                   fontSize: 12,
                 ),
               )
