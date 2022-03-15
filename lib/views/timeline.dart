@@ -165,7 +165,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
           return DragTarget(
             onWillAccept: (data) {
-              return data is EventItem;
+              return data is EventItem && data.source.allDay == false;
             },
             onAcceptWithDetails: (details) {
               setState(() {
@@ -179,8 +179,12 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                 final end = data.source.end!;
                 final d2 = start.hour * 60 + start.minute;
 
-                data.source.start = start.add(Duration(minutes: d1 - d2));
-                data.source.end = end.add(Duration(minutes: d1 - d2));
+                final diffDays = DateUtils.dateOnly(date)
+                    .difference(DateUtils.dateOnly(data.source.start!));
+                data.source.start =
+                    start.add(Duration(minutes: d1 - d2)).add(diffDays);
+                data.source.end =
+                    end.add(Duration(minutes: d1 - d2)).add(diffDays);
 
                 _plugin.saveEvent(data.source);
 
