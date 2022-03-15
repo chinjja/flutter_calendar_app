@@ -41,6 +41,8 @@ class _EventEditorPageState extends State<EventEditorPage> {
       _copy = Event(widget.calendar!.source.id);
     } else {
       _copy = Event.fromJson(widget.event!.source.toJson());
+      _copy.start = widget.event!.source.start;
+      _copy.end = widget.event!.source.end;
     }
     _copy.reminders = _copy.reminders ?? [];
     if (_copy.reminders!.isEmpty) {
