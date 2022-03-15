@@ -22,64 +22,16 @@ class DayWidget extends StatefulWidget {
 }
 
 class _DayWidgetState extends State<DayWidget> {
-  var _expanded = false;
-
   @override
   Widget build(BuildContext context) {
     final items = widget.items;
     final date = widget.date;
-    late final rowHeight = widget.height / 2;
+    late final rowHeight = (widget.height - 12) / 2;
     final now = DateUtils.dateOnly(DateTime.now());
     final isToday = now == date;
-    final hasRest = items.length > 3;
-    final int n;
-    if (_expanded) {
-      n = max(2, items.length);
-    } else if (items.length <= 2) {
-      n = 2;
-    } else {
-      n = 3;
-    }
-    var height = rowHeight * n;
-    final alldays = <Widget>[];
-    for (int i = 0; i < items.length; i++) {
-      if (!_expanded && i == 2 && items.length > 3) {
-        final rest = Container(
-          height: 26,
-          alignment: Alignment.centerLeft,
-          child: Text('+${items.length - 2}'),
-        );
-        alldays.add(rest);
-        break;
-      }
-      final item = items[i];
-      final widget = Padding(
-        key: ValueKey(item.source.eventId),
-        padding: const EdgeInsets.only(bottom: 1),
-        child: Material(
-          color: item.color,
-          borderRadius: BorderRadius.circular(5),
-          child: InkWell(
-            onTap: () {
-              Navigator.pushNamed(context, Routes.event, arguments: item);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              alignment: Alignment.centerLeft,
-              width: double.infinity,
-              height: 27,
-              child: Text(item.source.title ?? ''),
-            ),
-          ),
-        ),
-      );
-      alldays.add(widget);
-    }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      clipBehavior: Clip.hardEdge,
-      height: height,
+    return Container(
+      height: widget.height,
       padding: const EdgeInsets.only(top: 4),
       color: Theme.of(context).secondaryHeaderColor,
       child: Row(
@@ -96,6 +48,7 @@ class _DayWidgetState extends State<DayWidget> {
                       DateFormat.EEEE().format(date),
                       textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 4),
                     Container(
                       width: 36,
                       height: 36,
@@ -115,32 +68,46 @@ class _DayWidgetState extends State<DayWidget> {
                     ),
                   ],
                 ),
-                if (hasRest)
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _expanded = !_expanded;
-                      });
-                    },
-                    child: SizedBox(
-                      height: 26,
-                      child: Icon(_expanded
-                          ? Icons.expand_less_outlined
-                          : Icons.expand_more_outlined),
-                    ),
-                  ),
               ],
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Column(
-                children: alldays,
-              ),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: items.map((e) => _allday(e, rowHeight)).toList(),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _allday(EventItem item, double rowHeight) {
+    return Container(
+      height: rowHeight,
+      constraints: const BoxConstraints(minWidth: 50),
+      child: Material(
+        color: item.color,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+        child: InkWell(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 4,
+              ),
+              child: Text(
+                item.source.title ?? '',
+              ),
+            ),
+          ),
+          onTap: () {
+            Navigator.pushNamed(context, Routes.event, arguments: item);
+          },
+        ),
       ),
     );
   }
