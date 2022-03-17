@@ -3,7 +3,6 @@ import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:calendar_app/providers/day_provider.dart';
 import 'package:calendar_app/views/day.dart';
 import 'package:calendar_app/views/timeline.dart';
-import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -13,11 +12,9 @@ class DayPage extends StatefulWidget {
   const DayPage({
     Key? key,
     required this.date,
-    required this.events,
   }) : super(key: key);
 
   final DateTime date;
-  final Iterable<Event> events;
 
   @override
   _DayPageState createState() => _DayPageState();

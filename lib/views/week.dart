@@ -1,4 +1,5 @@
 import 'package:calendar_app/pages/day.dart';
+import 'package:calendar_app/pages/routes.dart';
 import 'package:calendar_app/providers/week_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:calendar_app/model/model.dart';
@@ -243,17 +244,10 @@ class _WeekWidgetState extends State<WeekWidget> {
   }
 
   void _pushDayPage(DateTime day) async {
-    final events = await _provider.rawEvents.first;
-    final returnDate = await Navigator.push(
+    final returnDate = await Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (context) {
-          return DayPage(
-            date: day,
-            events: events,
-          );
-        },
-      ),
+      Routes.day,
+      arguments: day,
     ) as DateTime?;
     widget.callback(returnDate);
   }

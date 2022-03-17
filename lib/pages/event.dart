@@ -6,13 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class EventPage extends StatelessWidget {
-  const EventPage({Key? key, this.item}) : super(key: key);
-  final EventItem? item;
+  const EventPage({Key? key, required this.item}) : super(key: key);
+  final EventItem item;
 
   @override
   Widget build(BuildContext context) {
-    var item =
-        this.item ?? ModalRoute.of(context)!.settings.arguments as EventItem;
     final event = item.source;
     final calendar = item.calendar.source;
     final plugin = Provider.of<CalendarProvider>(context, listen: false);

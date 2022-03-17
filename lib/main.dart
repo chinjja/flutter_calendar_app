@@ -1,5 +1,7 @@
 import 'dart:developer';
 
+import 'package:calendar_app/model/model.dart';
+import 'package:calendar_app/pages/day.dart';
 import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
@@ -45,9 +47,25 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
       ),
       initialRoute: Routes.month,
-      routes: {
-        Routes.month: (context) => const MonthPage(),
-        Routes.event: (context) => const EventPage(),
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case Routes.month:
+            return MaterialPageRoute(
+              builder: (context) => const MonthPage(),
+            );
+          case Routes.day:
+            return MaterialPageRoute(
+              builder: (context) =>
+                  DayPage(date: settings.arguments as DateTime),
+            );
+          case Routes.event:
+            return MaterialPageRoute(
+              builder: (context) =>
+                  EventPage(item: settings.arguments as EventItem),
+            );
+          default:
+            return null;
+        }
       },
     );
   }

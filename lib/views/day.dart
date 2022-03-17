@@ -122,7 +122,11 @@ class _DayWidgetState extends State<DayWidget> {
             ),
           ),
           onTap: () {
-            Navigator.pushNamed(context, Routes.event, arguments: item);
+            Navigator.pushNamed(
+              context,
+              Routes.event,
+              arguments: item,
+            );
           },
         ),
       ),
