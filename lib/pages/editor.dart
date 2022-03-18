@@ -36,6 +36,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   final _location = GlobalKey<FormFieldState<String>>();
   final _attendees = GlobalKey<FormFieldState<List<Attendee>>>();
   final _reminder = GlobalKey<FormFieldState<List<Reminder>>>();
+  final _calendar = GlobalKey<FormFieldState<CalendarItem>>();
 
   late Event _copy;
   late final _plugin = Provider.of<CalendarProvider>(context, listen: false);
@@ -210,39 +211,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
                       if (data == null) {
                         return const SizedBox.shrink();
                       }
-                      return EditorTile(
-                        leading: Center(
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: data.color,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                          ),
-                        ),
-                        content: Text('${data.source.name}'),
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                content: SizedBox(
-                                  width: 400,
-                                  height: 400,
-                                  child: CalendarSelectWidget(
-                                    callback: (value) {
-                                      setState(() {
-                                        _copy.calendarId = value.source.id;
-                                      });
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
+                      return CalendarFormField(
+                        fieldKey: _calendar,
+                        calendar: data,
                       );
                     }),
                 _div(),
@@ -289,6 +260,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   void _save() {
     if (_form.currentState?.validate() ?? false) {
+      _copy.calendarId = _calendar.currentState!.value?.source.id;
       _copy.title = _title.currentState?.value;
       _copy.location = _location.currentState?.value;
       _copy.description = _description.currentState?.value;
@@ -313,6 +285,60 @@ class _EventEditorPageState extends State<EventEditorPage> {
 }
 
 typedef MyCallback<T> = void Function(T value);
+
+class CalendarFormField extends StatelessWidget {
+  const CalendarFormField({
+    Key? key,
+    required this.fieldKey,
+    required this.calendar,
+  }) : super(key: key);
+  final Key fieldKey;
+  final CalendarItem calendar;
+
+  @override
+  Widget build(BuildContext context) {
+    return FormField<CalendarItem>(
+      key: fieldKey,
+      initialValue: calendar,
+      validator: (item) => item == null ? 'calendar id is non null' : null,
+      builder: (state) {
+        final data = state.value!;
+        return EditorTile(
+          leading: Center(
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: data.color,
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          content: Text('${data.source.name}'),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  content: SizedBox(
+                    width: 400,
+                    height: 400,
+                    child: CalendarSelectWidget(
+                      callback: (value) {
+                        state.didChange(value);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
 
 class DateTimeFormField extends StatelessWidget {
   const DateTimeFormField({
