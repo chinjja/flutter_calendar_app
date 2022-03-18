@@ -54,98 +54,91 @@ class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        final date = await _dateSuject.first;
-        Navigator.pop(context, date);
-        return false;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: StreamBuilder<DateTime>(
-              stream: _dateSuject,
-              builder: (context, snapshot) {
-                return Text(
-                    DateFormat.yMEd().format(snapshot.data ?? DateTime.now()));
-              }),
-          actions: [
-            IconButton(
-              onPressed: _moveTo,
-              icon: const Icon(Icons.search),
-            ),
-            IconButton(
-              onPressed: _today,
-              icon: const Icon(Icons.today),
-            ),
-          ],
-        ),
-        body: ListView.builder(
-          controller: _scrollController,
-          itemExtent: _itemExtent,
-          itemBuilder: (context, index) {
-            final date = _dateByIndex(index);
-            return Provider<DayProvider>(
-              create: (context) {
-                return DayProvider(plugin: _plugin, date: date);
-              },
-              dispose: (context, provider) {
-                provider.dispose();
-              },
-              builder: (context, child) {
-                var offset = _scrollController.offset - _offsetByIndex(index);
-                if (offset > _itemExtent - _headerExtent) {
-                  offset = _itemExtent - _headerExtent;
-                }
-                if (offset < 0) {
-                  offset = 0;
-                }
-                final provider = Provider.of<DayProvider>(context);
-                return StreamBuilder<List<EventItem>>(
-                  stream: provider.events,
-                  builder: (context, snapshot) {
-                    final events = snapshot.data ?? [];
-                    final alldays = <EventItem>[];
-                    final times = <EventItem>[];
-                    for (final item in events) {
-                      if (item.source.allDay ?? false) {
-                        alldays.add(item);
-                      } else {
-                        times.add(item);
-                      }
+    return Scaffold(
+      appBar: AppBar(
+        title: StreamBuilder<DateTime>(
+            stream: _dateSuject,
+            builder: (context, snapshot) {
+              return Text(
+                  DateFormat.yMEd().format(snapshot.data ?? DateTime.now()));
+            }),
+        actions: [
+          IconButton(
+            onPressed: _moveTo,
+            icon: const Icon(Icons.search),
+          ),
+          IconButton(
+            onPressed: _today,
+            icon: const Icon(Icons.today),
+          ),
+        ],
+      ),
+      body: ListView.builder(
+        controller: _scrollController,
+        itemExtent: _itemExtent,
+        itemBuilder: (context, index) {
+          final date = _dateByIndex(index);
+          return Provider<DayProvider>(
+            create: (context) {
+              return DayProvider(plugin: _plugin, date: date);
+            },
+            dispose: (context, provider) {
+              provider.dispose();
+            },
+            builder: (context, child) {
+              var offset = _scrollController.offset - _offsetByIndex(index);
+              if (offset > _itemExtent - _headerExtent) {
+                offset = _itemExtent - _headerExtent;
+              }
+              if (offset < 0) {
+                offset = 0;
+              }
+              final provider = Provider.of<DayProvider>(context);
+              return StreamBuilder<List<EventItem>>(
+                stream: provider.events,
+                builder: (context, snapshot) {
+                  final events = snapshot.data ?? [];
+                  final alldays = <EventItem>[];
+                  final times = <EventItem>[];
+                  for (final item in events) {
+                    if (item.source.allDay ?? false) {
+                      alldays.add(item);
+                    } else {
+                      times.add(item);
                     }
-                    return Stack(
-                      children: [
-                        TimelineWidget(
+                  }
+                  return Stack(
+                    children: [
+                      TimelineWidget(
+                        date: date,
+                        items: times,
+                        height: _itemExtent - _headerExtent,
+                        headerHeight: _headerExtent,
+                      ),
+                      Positioned(
+                        top: offset,
+                        left: 0,
+                        right: 0,
+                        child: DayWidget(
                           date: date,
-                          items: times,
-                          height: _itemExtent - _headerExtent,
-                          headerHeight: _headerExtent,
+                          items: alldays,
+                          height: _headerExtent,
                         ),
-                        Positioned(
-                          top: offset,
-                          left: 0,
-                          right: 0,
-                          child: DayWidget(
-                            date: date,
-                            items: alldays,
-                            height: _headerExtent,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-            );
-          },
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            final date = await _dateSuject.first;
-            await _plugin.newEvent(context, date);
-          },
-          child: const Icon(Icons.add),
-        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final date = await _dateSuject.first;
+          await _plugin.newEvent(context, date);
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
