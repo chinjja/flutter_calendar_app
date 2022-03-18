@@ -33,9 +33,11 @@ class _TimelineWidgetState extends State<TimelineWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final padding = MediaQuery.of(context).padding;
     final date = widget.date;
     final items = widget.items;
-    return SizedBox(
+    return Container(
+      padding: EdgeInsets.only(left: padding.left),
       height: widget.headerHeight + widget.height,
       child: Column(
         children: [
@@ -50,22 +52,23 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                 bottom: 0,
                 left: 71,
                 child: VerticalDivider(
-                  thickness: 1,
+                  thickness: 0.5,
                 ),
               ),
               Positioned(
                 top: 0,
                 bottom: 0,
                 left: 80,
-                right: 0,
+                right: padding.right,
                 child: _timelineItems(date, items),
               ),
               StreamBuilder<DateTime>(
-                  stream: _now,
-                  initialData: DateTime.now(),
-                  builder: (context, snapshot) {
-                    return _timelineAt(snapshot.data!, date);
-                  }),
+                stream: _now,
+                initialData: DateTime.now(),
+                builder: (context, snapshot) {
+                  return _timelineAt(snapshot.data!, date);
+                },
+              ),
             ],
           ),
         ],
@@ -137,6 +140,7 @@ class _TimelineWidgetState extends State<TimelineWidget> {
                       border: Border(
                         bottom: BorderSide(
                           color: Theme.of(context).dividerColor,
+                          width: 0.5,
                         ),
                       ),
                     ),

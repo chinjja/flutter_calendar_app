@@ -93,6 +93,7 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final padding = MediaQuery.of(context).padding;
     final theme = Theme.of(context);
     final yoils = List.generate(
         7, (index) => firstDay.add(Duration(days: index - firstDayOffset)));
@@ -128,7 +129,9 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
           Material(
             color: theme.primaryColor,
             elevation: 4,
-            child: SizedBox(
+            child: Container(
+              padding:
+                  EdgeInsets.only(left: padding.left, right: padding.right),
               height: 26,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -161,30 +164,34 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
                   dispose: (context, provider) {
                     provider.dispose();
                   },
-                  child: WeekWidget(
-                    key: ValueKey(week),
-                    week: week,
-                    callback: (day) {
-                      if (day != null) {
-                        final offset = getOffsetByWeek(day);
-                        final height =
-                            context.findRenderObject()!.semanticBounds.height;
-                        final curr = _controller?.offset ?? 0;
-                        if (offset < curr ||
-                            offset >
-                                curr +
-                                    _rowHeight * (height ~/ _rowHeight - 1)) {
-                          _scrollToByWeek(day, false);
-                        } else {
-                          final n = height ~/ _rowHeight - 2;
-                          final h = _rowHeight * n;
-                          if (offset > curr + h) {
-                            _scrollToByIndex(getIndexByWeek(day) - n, false);
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                        left: padding.left, right: padding.right),
+                    child: WeekWidget(
+                      key: ValueKey(week),
+                      week: week,
+                      callback: (day) {
+                        if (day != null) {
+                          final offset = getOffsetByWeek(day);
+                          final height =
+                              context.findRenderObject()!.semanticBounds.height;
+                          final curr = _controller?.offset ?? 0;
+                          if (offset < curr ||
+                              offset >
+                                  curr +
+                                      _rowHeight * (height ~/ _rowHeight - 1)) {
+                            _scrollToByWeek(day, false);
+                          } else {
+                            final n = height ~/ _rowHeight - 2;
+                            final h = _rowHeight * n;
+                            if (offset > curr + h) {
+                              _scrollToByIndex(getIndexByWeek(day) - n, false);
+                            }
                           }
                         }
-                      }
-                      _fetchCalendars();
-                    },
+                        _fetchCalendars();
+                      },
+                    ),
                   ),
                 );
               },

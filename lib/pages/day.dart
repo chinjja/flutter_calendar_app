@@ -3,7 +3,6 @@ import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:calendar_app/providers/day_provider.dart';
 import 'package:calendar_app/views/day.dart';
 import 'package:calendar_app/views/timeline.dart';
-import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -13,11 +12,9 @@ class DayPage extends StatefulWidget {
   const DayPage({
     Key? key,
     required this.date,
-    required this.events,
   }) : super(key: key);
 
   final DateTime date;
-  final Iterable<Event> events;
 
   @override
   _DayPageState createState() => _DayPageState();
@@ -166,16 +163,27 @@ class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
   }
 
   void _today() {
-    _goto(_indexByDate(DateTime.now()));
+    final now = DateTime.now();
+    _goto(_indexByDate(now), TimeOfDay.fromDateTime(now));
   }
 
-  void _goto(int index) {
-    final offset = _offsetByIndex(index);
+  void _goto(
+    int index, [
+    TimeOfDay time = const TimeOfDay(hour: 5, minute: 0),
+  ]) {
+    final offset = _offsetByIndex(index) + _offsetByTime(time);
     _scrollController.animateTo(
       offset,
       duration: const Duration(milliseconds: 200),
       curve: Curves.ease,
     );
+  }
+
+  double _offsetByTime(TimeOfDay? time) {
+    if (time == null) {
+      return 0;
+    }
+    return (_itemExtent - _headerExtent) * (time.hour / 24);
   }
 
   double _offsetByIndex(int index) {
