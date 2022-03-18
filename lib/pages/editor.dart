@@ -124,30 +124,26 @@ class _EventEditorPageState extends State<EventEditorPage> {
                           });
                         },
                       ),
-                      EditorTile(
-                        content: DateTimeFormField(
-                          fieldKey: _start,
-                          allday: allday,
-                          initDate: start,
-                          onChanged: (value) {
-                            final d = _end.currentState!.value!
-                                .difference(_start.currentState!.value!);
-                            _end.currentState?.didChange(value.add(d));
-                          },
-                        ),
+                      DateTimeFormField(
+                        fieldKey: _start,
+                        allday: allday,
+                        initDate: start,
+                        onChanged: (value) {
+                          final d = _end.currentState!.value!
+                              .difference(_start.currentState!.value!);
+                          _end.currentState?.didChange(value.add(d));
+                        },
                       ),
-                      EditorTile(
-                        content: DateTimeFormField(
-                          fieldKey: _end,
-                          allday: allday,
-                          initDate: end,
-                          validator: (value) {
-                            if (_start.currentState!.value!.isAfter(value!)) {
-                              return 'end is less than or equal to start';
-                            }
-                            return null;
-                          },
-                        ),
+                      DateTimeFormField(
+                        fieldKey: _end,
+                        allday: allday,
+                        initDate: end,
+                        validator: (value) {
+                          if (_start.currentState!.value!.isAfter(value!)) {
+                            return 'end is less than or equal to start';
+                          }
+                          return null;
+                        },
                       ),
                       EditorTile(
                         leading: const Icon(Icons.language_outlined),
@@ -370,65 +366,67 @@ class DateTimeFormField extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return FormField<DateTime>(
-      key: fieldKey,
-      initialValue: initDate,
-      validator: validator,
-      builder: (state) {
-        final date = DateUtils.dateOnly(state.value!);
-        final time = TimeOfDay.fromDateTime(state.value!);
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                InkWell(
-                  onTap: () async {
-                    final ret = await showDatePicker(
-                      context: context,
-                      initialDate: date,
-                      firstDate: DateTime(1970, 1, 1),
-                      lastDate: DateTime(2200, 1, 1),
-                    );
-                    if (ret != null) {
-                      final newDate = ret.add(
-                          Duration(hours: time.hour, minutes: time.minute));
-                      onChanged?.call(newDate);
-                      state.didChange(newDate);
-                    }
-                  },
-                  child: Text(DateFormat.yMd().format(date)),
-                ),
-                if (!allday)
+    return EditorTile(
+      content: FormField<DateTime>(
+        key: fieldKey,
+        initialValue: initDate,
+        validator: validator,
+        builder: (state) {
+          final date = DateUtils.dateOnly(state.value!);
+          final time = TimeOfDay.fromDateTime(state.value!);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                   InkWell(
                     onTap: () async {
-                      final ret = await showTimePicker(
+                      final ret = await showDatePicker(
                         context: context,
-                        initialTime: time,
+                        initialDate: date,
+                        firstDate: DateTime(1970, 1, 1),
+                        lastDate: DateTime(2200, 1, 1),
                       );
                       if (ret != null) {
-                        final newDate = date.add(
-                            Duration(hours: ret.hour, minutes: ret.minute));
+                        final newDate = ret.add(
+                            Duration(hours: time.hour, minutes: time.minute));
                         onChanged?.call(newDate);
                         state.didChange(newDate);
                       }
                     },
-                    child: Text(time.format(context)),
+                    child: Text(DateFormat.yMd().format(date)),
                   ),
-              ],
-            ),
-            if (state.hasError)
-              Text(
-                state.errorText!,
-                style: TextStyle(
-                  color: theme.colorScheme.error,
-                  fontSize: 12,
-                ),
-              )
-          ],
-        );
-      },
+                  if (!allday)
+                    InkWell(
+                      onTap: () async {
+                        final ret = await showTimePicker(
+                          context: context,
+                          initialTime: time,
+                        );
+                        if (ret != null) {
+                          final newDate = date.add(
+                              Duration(hours: ret.hour, minutes: ret.minute));
+                          onChanged?.call(newDate);
+                          state.didChange(newDate);
+                        }
+                      },
+                      child: Text(time.format(context)),
+                    ),
+                ],
+              ),
+              if (state.hasError)
+                Text(
+                  state.errorText!,
+                  style: TextStyle(
+                    color: theme.colorScheme.error,
+                    fontSize: 12,
+                  ),
+                )
+            ],
+          );
+        },
+      ),
     );
   }
 }
