@@ -203,27 +203,25 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   editMode: true,
                 ),
                 _div(),
-                StreamBuilder<Iterable<CalendarItem>>(
-                    stream: _plugin.calendars,
+                StreamBuilder<CalendarItem>(
+                    stream: _plugin.defaultCalendar,
                     builder: (context, snapshot) {
                       final data = snapshot.data;
                       if (data == null) {
                         return const SizedBox.shrink();
                       }
-                      final d = data.firstWhere(
-                          (element) => element.source.id == _copy.calendarId);
                       return EditorTile(
                         leading: Center(
                           child: Container(
                             width: 20,
                             height: 20,
                             decoration: BoxDecoration(
-                              color: d.color,
+                              color: data.color,
                               borderRadius: BorderRadius.circular(5),
                             ),
                           ),
                         ),
-                        content: Text('${d.source.name}'),
+                        content: Text('${data.source.name}'),
                         onTap: () {
                           showDialog(
                             context: context,
