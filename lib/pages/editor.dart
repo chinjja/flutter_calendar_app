@@ -1,7 +1,10 @@
+import 'dart:developer';
+
 import 'package:calendar_app/model/model.dart';
 import 'package:calendar_app/providers/calendar_provider.dart';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttercontactpicker/fluttercontactpicker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -31,6 +34,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   final _title = GlobalKey<FormFieldState<String>>();
   final _description = GlobalKey<FormFieldState<String>>();
   final _location = GlobalKey<FormFieldState<String>>();
+  final _attendees = GlobalKey<FormFieldState<List<Attendee>>>();
 
   late Event _copy;
   late final _plugin = Provider.of<CalendarProvider>(context, listen: false);
@@ -188,6 +192,16 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   content: Text('${_copy.recurrenceRule ?? 'Does not repeat'}'),
                 ),
                 _div(),
+                AttendeeFormField(
+                  attendees: _copy.attendees
+                          ?.where((e) => e != null)
+                          .map((e) => e!)
+                          .toList() ??
+                      [],
+                  fieldKey: _attendees,
+                  editMode: true,
+                ),
+                _div(),
                 StreamBuilder<Iterable<CalendarItem>>(
                     stream: _plugin.calendars,
                     builder: (context, snapshot) {
@@ -289,6 +303,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
         _end.currentState!.value!,
         tz.local,
       );
+      _copy.attendees = _attendees.currentState?.value;
       _plugin.saveEvent(_copy);
       Navigator.pop(context);
     }
@@ -301,7 +316,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
 typedef MyCallback<T> = void Function(T value);
 
-class DateTimeFormField extends StatefulWidget {
+class DateTimeFormField extends StatelessWidget {
   const DateTimeFormField({
     Key? key,
     required this.allday,
@@ -317,18 +332,13 @@ class DateTimeFormField extends StatefulWidget {
   final MyCallback<DateTime>? onChanged;
 
   @override
-  State<DateTimeFormField> createState() => _DateTimeFormFieldState();
-}
-
-class _DateTimeFormFieldState extends State<DateTimeFormField> {
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return FormField<DateTime>(
-      key: widget.fieldKey,
-      initialValue: widget.initDate,
-      validator: widget.validator,
+      key: fieldKey,
+      initialValue: initDate,
+      validator: validator,
       builder: (state) {
         final date = DateUtils.dateOnly(state.value!);
         final time = TimeOfDay.fromDateTime(state.value!);
@@ -349,13 +359,13 @@ class _DateTimeFormFieldState extends State<DateTimeFormField> {
                     if (ret != null) {
                       final newDate = ret.add(
                           Duration(hours: time.hour, minutes: time.minute));
-                      widget.onChanged?.call(newDate);
+                      onChanged?.call(newDate);
                       state.didChange(newDate);
                     }
                   },
                   child: Text(DateFormat.yMd().format(date)),
                 ),
-                if (!widget.allday)
+                if (!allday)
                   InkWell(
                     onTap: () async {
                       final ret = await showTimePicker(
@@ -365,7 +375,7 @@ class _DateTimeFormFieldState extends State<DateTimeFormField> {
                       if (ret != null) {
                         final newDate = date.add(
                             Duration(hours: ret.hour, minutes: ret.minute));
-                        widget.onChanged?.call(newDate);
+                        onChanged?.call(newDate);
                         state.didChange(newDate);
                       }
                     },
@@ -388,70 +398,94 @@ class _DateTimeFormFieldState extends State<DateTimeFormField> {
   }
 }
 
-class AttendeeWidget extends StatelessWidget {
-  const AttendeeWidget({
+class AttendeeFormField extends StatelessWidget {
+  const AttendeeFormField({
     Key? key,
+    this.fieldKey,
     required this.attendees,
-    required this.onChanged,
+    this.editMode = false,
   }) : super(key: key);
-
-  final List<Attendee?> attendees;
-  final MyCallback<List<Attendee?>>? onChanged;
+  final List<Attendee> attendees;
+  final bool editMode;
+  final Key? fieldKey;
 
   @override
   Widget build(BuildContext context) {
-    final children = <Widget>[];
+    return FormField<List<Attendee>>(
+      key: fieldKey,
+      initialValue: attendees,
+      builder: (state) {
+        final attendees = state.value!;
+        final children = <Widget>[];
 
-    for (int i = 0; i <= attendees.length; i++) {
-      Widget? icon;
-      if (i == 0) {
-        icon = const Icon(Icons.people_outline);
-      }
-      if (i == attendees.length) {
-        if (onChanged == null) {
-          break;
-        }
-        children.add(
-          EditorTile(
-            leading: icon,
-            content: const Text("Add"),
-            onTap: () {
-              final value = [...attendees];
-              value.add(
-                Attendee(
-                  name: 'chinjja',
-                  emailAddress: "chinjja.test@gmail.com",
-                  role: AttendeeRole.None,
+        for (int i = 0; i <= attendees.length; i++) {
+          Widget? icon;
+          if (i == 0) {
+            icon = const Icon(Icons.people_outline);
+          }
+          if (i == attendees.length) {
+            if (editMode) {
+              children.add(
+                EditorTile(
+                  leading: icon,
+                  content: const Text("Add"),
+                  onTap: () async {
+                    try {
+                      final contact =
+                          await FlutterContactPicker.pickEmailContact();
+                      final idx = attendees.indexWhere((element) =>
+                          element.emailAddress == contact.email?.email);
+                      if (idx == -1) {
+                        final value = [...attendees];
+                        value.add(
+                          Attendee(
+                            name: contact.fullName,
+                            emailAddress: contact.email?.email,
+                            role: AttendeeRole.None,
+                          ),
+                        );
+                        state.didChange(value);
+                      }
+                    } catch (e) {
+                      log('$e');
+                    }
+                  },
                 ),
               );
-              onChanged!(value);
-            },
-          ),
-        );
-      } else {
-        final attendee = attendees[i];
-        if (attendee != null) {
-          children.add(
-            EditorTile(
-              leading: icon,
-              content: Text('${attendee.emailAddress}'),
-              trailing: onChanged == null
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        final value = [...attendees];
-                        value.removeAt(i);
-                        onChanged!(value);
-                      },
+            }
+          } else {
+            final attendee = attendees[i];
+            children.add(
+              EditorTile(
+                leading: icon,
+                content: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${attendee.name}'),
+                    Text(
+                      '${attendee.emailAddress}',
+                      style: Theme.of(context).textTheme.caption,
                     ),
-            ),
-          );
+                  ],
+                ),
+                trailing: !editMode
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          final value = [...attendees];
+                          value.removeAt(i);
+                          state.didChange(value);
+                        },
+                      ),
+              ),
+            );
+          }
         }
-      }
-    }
-    return Column(
-      children: children,
+        return Column(
+          children: children,
+        );
+      },
     );
   }
 }

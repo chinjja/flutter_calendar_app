@@ -102,7 +102,9 @@ class EventPage extends StatelessWidget {
                 leading: const Icon(Icons.lock_outline),
                 content: Text(event.availability.name),
               ),
-              AttendeeWidget(attendees: event.attendees ?? [], onChanged: null),
+              AttendeeFormField(
+                attendees: event.attendees?.map((e) => e!).toList() ?? [],
+              ),
               ReminderWidget(reminders: event.reminders ?? [], onChanged: null),
               if (event.description != null && event.description!.isNotEmpty)
                 EditorTile(
