@@ -35,6 +35,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
   final _description = GlobalKey<FormFieldState<String>>();
   final _location = GlobalKey<FormFieldState<String>>();
   final _attendees = GlobalKey<FormFieldState<List<Attendee>>>();
+  final _reminder = GlobalKey<FormFieldState<List<Reminder>>>();
 
   late Event _copy;
   late final _plugin = Provider.of<CalendarProvider>(context, listen: false);
@@ -259,13 +260,11 @@ class _EventEditorPageState extends State<EventEditorPage> {
                   ),
                 ),
                 _div(),
-                ReminderWidget(
-                    reminders: _copy.reminders!,
-                    onChanged: (data) {
-                      setState(() {
-                        _copy.reminders = data;
-                      });
-                    }),
+                ReminderFormField(
+                  fieldKey: _reminder,
+                  reminders: _copy.reminders!,
+                  editMode: true,
+                ),
                 _div(),
                 EditorTile(
                   leading: const Icon(Icons.description_outlined),
@@ -304,6 +303,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
         tz.local,
       );
       _copy.attendees = _attendees.currentState?.value;
+      _copy.reminders = _reminder.currentState?.value;
       _plugin.saveEvent(_copy);
       Navigator.pop(context);
     }
@@ -490,81 +490,103 @@ class AttendeeFormField extends StatelessWidget {
   }
 }
 
-class ReminderWidget extends StatelessWidget {
-  const ReminderWidget(
-      {Key? key, required this.reminders, required this.onChanged})
-      : super(key: key);
+class ReminderFormField extends StatelessWidget {
+  const ReminderFormField({
+    Key? key,
+    this.fieldKey,
+    required this.reminders,
+    this.editMode = false,
+  }) : super(key: key);
   final List<Reminder> reminders;
-  final MyCallback<List<Reminder>>? onChanged;
+  final bool editMode;
+  final Key? fieldKey;
 
   @override
   Widget build(BuildContext context) {
-    final children = <Widget>[];
+    return FormField<List<Reminder>>(
+      key: fieldKey,
+      initialValue: reminders,
+      builder: (state) {
+        final list = state.value!;
+        final children = <Widget>[];
 
-    for (int i = 0; i <= reminders.length; i++) {
-      Widget? icon;
-      if (i == 0) {
-        icon = const Icon(Icons.notifications_outlined);
-      }
-      if (i == reminders.length) {
-        if (onChanged == null) {
-          break;
-        }
-        children.add(
-          EditorTile(
-            leading: icon,
-            content: const Text("Add notification"),
-            onTap: () {
-              showDialog(
-                  context: context,
-                  builder: (context) {
-                    final list = [5, 10, 15, 30, 60];
-                    return AlertDialog(
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: list
-                            .map((e) => RadioListTile(
-                                  title: Text('$e minutes before'),
-                                  value: false,
-                                  groupValue: true,
-                                  onChanged: (value) {
-                                    final value = [...reminders];
-                                    value.add(Reminder(minutes: e));
-                                    onChanged!(value);
-                                    Navigator.pop(context);
-                                  },
-                                ))
-                            .toList(),
+        for (int i = 0; i <= list.length; i++) {
+          Widget? icon;
+          if (i == 0) {
+            icon = const Icon(Icons.notifications_outlined);
+          }
+          if (i == list.length) {
+            if (editMode) {
+              children.add(
+                EditorTile(
+                  leading: icon,
+                  content: const Text("Add notification"),
+                  onTap: () async {
+                    final reminder = await _showDialog(context, list);
+                    if (reminder != null) {
+                      final idx = list.indexWhere(
+                          (element) => element.minutes == reminder.minutes);
+                      if (idx == -1) {
+                        final value = [...list];
+                        value.add(reminder);
+                        state.didChange(value);
+                      }
+                    }
+                  },
+                ),
+              );
+            }
+          } else {
+            final reminder = list[i];
+            children.add(
+              EditorTile(
+                leading: icon,
+                content: Text('${reminder.minutes} minutes before'),
+                trailing: !editMode
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          final value = [...list];
+                          value.removeAt(i);
+                          state.didChange(value);
+                        },
                       ),
-                    );
-                  });
-            },
-          ),
+              ),
+            );
+          }
+        }
+        return Column(
+          children: children,
         );
-      } else {
-        final reminder = reminders[i];
-        children.add(
-          EditorTile(
-            leading: icon,
-            content: Text('${reminder.minutes} minutes before'),
-            trailing: onChanged == null
-                ? null
-                : IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      final value = [...reminders];
-                      value.removeAt(i);
-                      onChanged!(value);
-                    },
-                  ),
-          ),
-        );
-      }
-    }
-    return Column(
-      children: children,
+      },
     );
+  }
+
+  Future<Reminder?> _showDialog(
+      BuildContext context, List<Reminder> reminders) async {
+    return await showDialog(
+      context: context,
+      builder: (context) {
+        final list = [5, 10, 15, 30, 60];
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: list
+                .map((e) => RadioListTile(
+                      title: Text('$e minutes before'),
+                      value: false,
+                      groupValue: true,
+                      onChanged: (value) {
+                        Navigator.pop(context, Reminder(minutes: e));
+                      },
+                    ))
+                .toList(),
+          ),
+        );
+      },
+    ) as Reminder?;
   }
 }
 
