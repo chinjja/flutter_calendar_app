@@ -689,7 +689,9 @@ class EditorTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          height: 40,
+          constraints: const BoxConstraints(
+            minHeight: 40,
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(children: [
             SizedBox(
