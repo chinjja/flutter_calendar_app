@@ -61,23 +61,6 @@ class _EventEditorPageState extends State<EventEditorPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final allday = _copy.allDay ?? false;
-    var now = DateTime.now();
-    if (widget.date != null) {
-      final d = widget.date!;
-      now = DateTime(d.year, d.month, d.day, now.hour, now.minute);
-    }
-    final def = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      now.hour,
-      (now.minute + 15) ~/ 15 * 15,
-    );
-    final start = _copy.start ?? def;
-    final end = _copy.end ?? start.add(const Duration(hours: 1));
-
     return SafeArea(
       child: DefaultTextStyle(
         style: theme.textTheme.titleMedium!,
@@ -87,133 +70,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
             Expanded(
               child: SingleChildScrollView(
                 controller: widget.scrollController,
-                child: Form(
-                  key: _form,
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 50, top: 8),
-                        child: TextFormField(
-                          key: _title,
-                          initialValue: _copy.title,
-                          decoration: const InputDecoration(
-                            hintText: 'Title',
-                            border: InputBorder.none,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 30,
-                          ),
-                        ),
-                      ),
-                      _div(),
-                      EditorTile(
-                        leading: const Icon(Icons.schedule_outlined),
-                        content: const Text('All-day'),
-                        trailing: Switch(
-                          value: allday,
-                          onChanged: (v) {
-                            setState(() {
-                              _copy.allDay = !_copy.allDay!;
-                            });
-                          },
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _copy.allDay = !_copy.allDay!;
-                          });
-                        },
-                      ),
-                      DateTimeFormField(
-                        fieldKey: _start,
-                        allday: allday,
-                        initDate: start,
-                        onChanged: (value) {
-                          final d = _end.currentState!.value!
-                              .difference(_start.currentState!.value!);
-                          _end.currentState?.didChange(value.add(d));
-                        },
-                      ),
-                      DateTimeFormField(
-                        fieldKey: _end,
-                        allday: allday,
-                        initDate: end,
-                        validator: (value) {
-                          if (_start.currentState!.value!.isAfter(value!)) {
-                            return 'end is less than or equal to start';
-                          }
-                          return null;
-                        },
-                      ),
-                      EditorTile(
-                        leading: const Icon(Icons.language_outlined),
-                        content: Text(tz.local.name),
-                      ),
-                      EditorTile(
-                        leading: const Icon(Icons.refresh_outlined),
-                        content: Text(
-                            '${_copy.recurrenceRule ?? 'Does not repeat'}'),
-                      ),
-                      _div(),
-                      AttendeeFormField(
-                        attendees: _copy.attendees
-                                ?.where((e) => e != null)
-                                .map((e) => e!)
-                                .toList() ??
-                            [],
-                        fieldKey: _attendees,
-                        editMode: true,
-                      ),
-                      _div(),
-                      StreamBuilder<CalendarItem>(
-                          stream: _plugin.defaultCalendar,
-                          builder: (context, snapshot) {
-                            final data = snapshot.data;
-                            if (data == null) {
-                              return const SizedBox.shrink();
-                            }
-                            return CalendarFormField(
-                              fieldKey: _calendar,
-                              calendar: data,
-                            );
-                          }),
-                      _div(),
-                      EditorTile(
-                        leading: const Icon(Icons.location_on_outlined),
-                        content: TextFormField(
-                          key: _location,
-                          initialValue: _copy.location,
-                          decoration: const InputDecoration(
-                            hintText: 'Location',
-                            border: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                      _div(),
-                      ReminderFormField(
-                        fieldKey: _reminder,
-                        reminders: _copy.reminders!,
-                        editMode: true,
-                      ),
-                      _div(),
-                      EditorTile(
-                        leading: const Icon(Icons.description_outlined),
-                        content: TextFormField(
-                          key: _description,
-                          initialValue: _copy.description,
-                          keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.newline,
-                          maxLines: null,
-                          decoration: const InputDecoration(
-                            hintText: 'Description',
-                            border: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                      _div(),
-                    ],
-                  ),
-                ),
+                child: _body(),
               ),
             ),
           ],
@@ -241,6 +98,152 @@ class _EventEditorPageState extends State<EventEditorPage> {
       _plugin.saveEvent(_copy);
       Navigator.pop(context);
     }
+  }
+
+  Widget _body() {
+    final allday = _copy.allDay ?? false;
+    var now = DateTime.now();
+    if (widget.date != null) {
+      final d = widget.date!;
+      now = DateTime(d.year, d.month, d.day, now.hour, now.minute);
+    }
+    final def = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      (now.minute + 15) ~/ 15 * 15,
+    );
+    final start = _copy.start ?? def;
+    final end = _copy.end ?? start.add(const Duration(hours: 1));
+
+    return Form(
+      key: _form,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 50, top: 8),
+            child: TextFormField(
+              key: _title,
+              initialValue: _copy.title,
+              decoration: const InputDecoration(
+                hintText: 'Title',
+                border: InputBorder.none,
+              ),
+              style: const TextStyle(
+                fontSize: 30,
+              ),
+            ),
+          ),
+          _div(),
+          EditorTile(
+            leading: const Icon(Icons.schedule_outlined),
+            content: const Text('All-day'),
+            trailing: Switch(
+              value: allday,
+              onChanged: (v) {
+                setState(() {
+                  _copy.allDay = !_copy.allDay!;
+                });
+              },
+            ),
+            onTap: () {
+              setState(() {
+                _copy.allDay = !_copy.allDay!;
+              });
+            },
+          ),
+          DateTimeFormField(
+            fieldKey: _start,
+            allday: allday,
+            initDate: start,
+            onChanged: (value) {
+              final d = _end.currentState!.value!
+                  .difference(_start.currentState!.value!);
+              _end.currentState?.didChange(value.add(d));
+            },
+          ),
+          DateTimeFormField(
+            fieldKey: _end,
+            allday: allday,
+            initDate: end,
+            validator: (value) {
+              if (_start.currentState!.value!.isAfter(value!)) {
+                return 'end is less than or equal to start';
+              }
+              return null;
+            },
+          ),
+          EditorTile(
+            leading: const Icon(Icons.language_outlined),
+            content: Text(tz.local.name),
+          ),
+          EditorTile(
+            leading: const Icon(Icons.refresh_outlined),
+            content: Text('${_copy.recurrenceRule ?? 'Does not repeat'}'),
+          ),
+          _div(),
+          AttendeeFormField(
+            attendees: _copy.attendees
+                    ?.where((e) => e != null)
+                    .map((e) => e!)
+                    .toList() ??
+                [],
+            fieldKey: _attendees,
+            editMode: true,
+          ),
+          _div(),
+          StreamBuilder<CalendarItem>(
+              stream: _plugin.defaultCalendar,
+              builder: (context, snapshot) {
+                final data = snapshot.data;
+                if (data == null) {
+                  return const SizedBox.shrink();
+                }
+                return CalendarFormField(
+                  fieldKey: _calendar,
+                  calendar: data,
+                );
+              }),
+          _div(),
+          EditorTile(
+            leading: const Icon(Icons.location_on_outlined),
+            content: TextFormField(
+              key: _location,
+              initialValue: _copy.location,
+              decoration: const InputDecoration(
+                hintText: 'Location',
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          _div(),
+          ReminderFormField(
+            fieldKey: _reminder,
+            reminders: _copy.reminders!,
+            editMode: true,
+          ),
+          _div(),
+          EditorTile(
+            leading: const Icon(Icons.description_outlined),
+            content: TextFormField(
+              key: _description,
+              initialValue: _copy.description,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              maxLines: null,
+              decoration: const InputDecoration(
+                hintText: 'Description',
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          _div(),
+        ],
+      ),
+    );
   }
 
   Widget _header() {
