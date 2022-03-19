@@ -15,17 +15,13 @@ typedef EventItemBuilder = Widget Function(
   int rest,
 );
 
-typedef ScrollToDate = void Function(DateTime? day);
-
 class WeekWidget extends StatefulWidget {
   const WeekWidget({
     Key? key,
     required this.week,
-    required this.callback,
   }) : super(key: key);
 
   final DateTime week;
-  final ScrollToDate callback;
 
   @override
   _WeekWidgetState createState() => _WeekWidgetState();
@@ -243,12 +239,11 @@ class _WeekWidgetState extends State<WeekWidget> {
     );
   }
 
-  void _pushDayPage(DateTime day) async {
-    final returnDate = await Navigator.pushNamed(
+  void _pushDayPage(DateTime day) {
+    Navigator.pushNamed(
       context,
       Routes.day,
       arguments: day,
-    ) as DateTime?;
-    widget.callback(returnDate);
+    );
   }
 }

@@ -14,7 +14,7 @@ class CalendarProvider {
   final DeviceCalendarPlugin plugin;
   final SharedPreferences preference;
 
-  late final _calendars = BehaviorSubject<Iterable<CalendarItem>>();
+  final _calendars = BehaviorSubject<Iterable<CalendarItem>>();
   late final calendars = _calendars.stream;
   late final selectedCalendars =
       calendars.flatMap<Iterable<CalendarItem>>((value) {
@@ -28,8 +28,16 @@ class CalendarProvider {
         .firstWhere((event) => event.isDefault)
         .asStream();
   });
-  late final _eventChanged = PublishSubject<String>();
+  final _eventChanged = PublishSubject<String>();
   late final eventChanged = _eventChanged.stream;
+
+  final day = BehaviorSubject.seeded(DateTime.now());
+
+  void dispose() {
+    _calendars.close();
+    _eventChanged.close();
+    day.close();
+  }
 
   Future<void> saveCalendar(Iterable<CalendarItem> item) async {
     log('save calendar');

@@ -28,7 +28,7 @@ class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
     initialScrollOffset: _offsetByDate(widget.date),
   );
 
-  late final _plugin = context.read<CalendarProvider>();
+  late final _calendarProvider = context.read<CalendarProvider>();
 
   static const _headerExtent = 68.0;
   static const _minItemExtent = 34.0 * 24;
@@ -39,8 +39,13 @@ class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      _dateSuject.add(_dateByOffset(_scrollController.offset));
+    _scrollController.addListener(() async {
+      final prevDay = await _calendarProvider.day.first;
+      final day = _dateByOffset(_scrollController.offset);
+      if (!DateUtils.isSameDay(prevDay, day)) {
+        _calendarProvider.day.add(day);
+        _dateSuject.add(day);
+      }
       setState(() {});
     });
   }
@@ -80,7 +85,7 @@ class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
           final date = _dateByIndex(index);
           return Provider<DayProvider>(
             create: (context) {
-              return DayProvider(plugin: _plugin, date: date);
+              return DayProvider(plugin: _calendarProvider, date: date);
             },
             dispose: (context, provider) {
               provider.dispose();
@@ -136,7 +141,7 @@ class _DayPageState extends State<DayPage> with SingleTickerProviderStateMixin {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final date = await _dateSuject.first;
-          await _plugin.newEvent(context, date);
+          await _calendarProvider.newEvent(context, date);
         },
         child: const Icon(Icons.add),
       ),

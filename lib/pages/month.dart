@@ -25,61 +25,61 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
   late final _localizations = MaterialLocalizations.of(context);
   late final firstDayOffset = DateUtils.firstDayOffset(1970, 1, _localizations);
 
-  late final _title = BehaviorSubject.seeded(getIndexByWeek(DateTime.now()));
-
-  ScrollController? _controller;
+  late final ScrollController _controller = ScrollController(
+    initialScrollOffset: getOffsetByWeek(DateTime.now()),
+  )..addListener(() async {
+      final index = getIndexByOffset(_controller.offset);
+      if (_index != index) {
+        _index = index;
+        _plugin.day.add(getWeekByIndex(index));
+      }
+    });
   late var _index = getIndexByWeek(DateTime.now());
+  final _subs = CompositeSubscription();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance?.addObserver(this);
-  }
+    _plugin.day.listen((value) {
+      final offset = getOffsetByWeek(value);
+      final index = getIndexByOffset(offset);
+      if (index != _index) {
+        _index = index;
+        _scrollToByIndex(index);
+      }
+    }).addTo(_subs);
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_controller == null) {
-      _controller = ScrollController(
-        initialScrollOffset: getOffsetByWeek(DateTime.now()),
-      );
-      _controller!.addListener(() async {
-        final index = getIndexByOffset(_controller!.offset);
-        if (_index != index) {
-          _index = index;
-          _title.add(index);
-        }
-      });
-      WidgetsBinding.instance!.addPostFrameCallback((timeStamp) async {
-        final result = await _plugin.requestPermissions();
-        if (result) {
-          _fetchCalendars();
-        } else {
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                content: const Text('Require Calendar Permission'),
-                actions: [
-                  TextButton(
-                    child: const Text('OK'),
-                    onPressed: () {
-                      SystemNavigator.pop();
-                    },
-                  )
-                ],
-              );
-            },
-          );
-        }
-      });
-    }
+    WidgetsBinding.instance!.addPostFrameCallback((timeStamp) async {
+      final result = await _plugin.requestPermissions();
+      if (result) {
+        _fetchCalendars();
+      } else {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              content: const Text('Require Calendar Permission'),
+              actions: [
+                TextButton(
+                  child: const Text('OK'),
+                  onPressed: () {
+                    SystemNavigator.pop();
+                  },
+                )
+              ],
+            );
+          },
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance?.removeObserver(this);
-    _controller?.dispose();
+    _subs.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -99,12 +99,12 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
         7, (index) => firstDay.add(Duration(days: index - firstDayOffset)));
     return Scaffold(
       appBar: AppBar(
-        title: StreamBuilder<int>(
-          stream: _title,
+        title: StreamBuilder<DateTime>(
+          stream: _plugin.day,
           builder: (context, snapshot) {
-            final index = snapshot.data;
-            if (index == null) return const CircularProgressIndicator();
-            final startDay = getWeekByIndex(index);
+            final date = snapshot.data;
+            if (date == null) return const CircularProgressIndicator();
+            final startDay = getWeekByIndex(getIndexByWeek(date));
             final title = DateFormat.yMMMM()
                 .format(startDay.add(const Duration(days: 3)));
             return Text(title);
@@ -170,27 +170,6 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
                     child: WeekWidget(
                       key: ValueKey(week),
                       week: week,
-                      callback: (day) {
-                        if (day != null) {
-                          final offset = getOffsetByWeek(day);
-                          final height =
-                              context.findRenderObject()!.semanticBounds.height;
-                          final curr = _controller?.offset ?? 0;
-                          if (offset < curr ||
-                              offset >
-                                  curr +
-                                      _rowHeight * (height ~/ _rowHeight - 1)) {
-                            _scrollToByWeek(day, false);
-                          } else {
-                            final n = height ~/ _rowHeight - 2;
-                            final h = _rowHeight * n;
-                            if (offset > curr + h) {
-                              _scrollToByIndex(getIndexByWeek(day) - n, false);
-                            }
-                          }
-                        }
-                        _fetchCalendars();
-                      },
                     ),
                   ),
                 );
@@ -237,13 +216,13 @@ class _MonthPageState extends State<MonthPage> with WidgetsBindingObserver {
   void _scrollToByIndex(int index, [bool animate = true]) {
     final offset = getOffsetByIndex(index);
     if (animate && (_index - index).abs() < 10) {
-      _controller?.animateTo(
+      _controller.animateTo(
         offset,
         duration: const Duration(milliseconds: 250),
         curve: Curves.ease,
       );
     } else {
-      _controller?.jumpTo(offset);
+      _controller.jumpTo(offset);
     }
   }
 
