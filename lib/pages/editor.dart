@@ -81,7 +81,8 @@ class _EventEditorPageState extends State<EventEditorPage> {
 
   void _save() {
     if (_form.currentState?.validate() ?? false) {
-      _copy.calendarId = _calendar.currentState!.value?.source.id;
+      final calendar = _calendar.currentState!.value?.source;
+      _copy.calendarId = calendar?.id;
       _copy.title = _title.currentState?.value;
       _copy.location = _location.currentState?.value;
       _copy.description = _description.currentState?.value;
@@ -93,7 +94,26 @@ class _EventEditorPageState extends State<EventEditorPage> {
         _end.currentState!.value!,
         tz.local,
       );
-      _copy.attendees = _attendees.currentState?.value;
+      final attendees = _attendees.currentState?.value ?? [];
+      if (attendees.isNotEmpty) {
+        final idx = attendees.indexWhere((element) => element.isOrganiser);
+        if (idx == -1) {
+          final attendee = Attendee(
+            name: calendar!.name!,
+            emailAddress: calendar.accountName!,
+            role: AttendeeRole.None,
+            iosAttendeeDetails: IosAttendeeDetails(
+              attendanceStatus: IosAttendanceStatus.Accepted,
+            ),
+            androidAttendeeDetails: AndroidAttendeeDetails(
+              attendanceStatus: AndroidAttendanceStatus.Accepted,
+            ),
+            isOrganiser: true,
+          );
+          attendees.insert(0, attendee);
+        }
+      }
+      _copy.attendees = attendees;
       _copy.reminders = _reminder.currentState?.value;
       _plugin.saveEvent(_copy);
       Navigator.pop(context);
@@ -478,6 +498,12 @@ class AttendeeFormField extends StatelessWidget {
                             name: contact.fullName,
                             emailAddress: contact.email?.email,
                             role: AttendeeRole.None,
+                            iosAttendeeDetails: IosAttendeeDetails(
+                              attendanceStatus: IosAttendanceStatus.Pending,
+                            ),
+                            androidAttendeeDetails: AndroidAttendeeDetails(
+                              attendanceStatus: AndroidAttendanceStatus.Invited,
+                            ),
                           ),
                         );
                         state.didChange(value);
@@ -497,7 +523,8 @@ class AttendeeFormField extends StatelessWidget {
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${attendee.name}'),
+                    Text(
+                        '${attendee.name}${attendee.isOrganiser ? '(Organiser)' : ''}'),
                     Text(
                       '${attendee.emailAddress}',
                       style: Theme.of(context).textTheme.caption,

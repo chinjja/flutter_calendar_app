@@ -15,17 +15,22 @@ class EventPage extends StatelessWidget {
     final calendar = item.calendar.source;
     final plugin = Provider.of<CalendarProvider>(context, listen: false);
 
-    Widget dateText;
+    String dateText;
     if (event.allDay ?? false) {
-      if (event.start!.isAtSameMomentAs(event.end!)) {
-        dateText = Text(DateFormat.yMd().format(event.start!));
-      } else {
-        final s = DateFormat.yMd().format(event.start!);
-        final e = DateFormat.yMd().format(event.end!);
-        dateText = Text('$s ~ $e');
+      final format = DateFormat.yMd().format;
+      dateText = format(event.start!);
+      if (!DateUtils.isSameDay(event.start, event.end)) {
+        dateText += '~${format(event.end!)}';
       }
     } else {
-      dateText = Text(DateFormat.yMd().add_j().format(event.start!));
+      if (DateUtils.isSameDay(event.start, event.end)) {
+        final format = DateFormat.jm().format;
+        dateText =
+            '${DateFormat.yMd().format(event.start!)} ${format(event.start!)}~${format(event.end!)}';
+      } else {
+        final format = DateFormat.yMd().add_jm().format;
+        dateText = '${format(event.start!)}~${format(event.end!)}';
+      }
     }
     return Scaffold(
       appBar: AppBar(
@@ -90,7 +95,7 @@ class EventPage extends StatelessWidget {
                           maxLines: null,
                           style: const TextStyle(fontSize: 20),
                         ),
-                        dateText,
+                        Text(dateText),
                       ],
                     )),
               ),
